@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ujian Akhir: Perencanaan Manajemen Bengkel & Servis</title>
+    <title>Ujian Akhir: Manajemen Bengkel & Servis</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -14,11 +14,11 @@
         body { user-select: none; -webkit-user-select: none; }
         .blur-screen { filter: blur(15px); pointer-events: none; }
         
-        /* OPTIMASI CSS ANTI-LAG */
+        /* OPTIMASI CSS ANTI-LAG & SCROLL MOBILE */
         .draggable-item, .sortable-item { 
             cursor: grab; 
-            touch-action: none; 
-            will-change: transform; /* Memberitahu GPU untuk bersiap merender gerakan */
+            /* touch-action dihapus agar layar HP tetap bisa di-scroll normal */
+            will-change: transform; 
         }
         .draggable-item:active, .sortable-item:active { cursor: grabbing; }
         .dropzone { min-height: 50px; border: 2px dashed #cbd5e1; transition: background-color 0.2s; }
@@ -49,6 +49,9 @@
                         <option value="">Pilih Kelas...</option>
                         <option value="XI TBSM 1">XI TBSM 1</option>
                         <option value="XI TBSM 2">XI TBSM 2</option>
+                        <option value="XII TBSM 1">XII TBSM 1</option>
+                        <option value="XII TBSM 2">XII TBSM 2</option>
+                        <option value="XII TBSM 3">XII TBSM 3</option>
                     </select>
                 </div>
                 <div class="bg-red-50 p-4 rounded-lg border border-red-200 mt-4">
@@ -142,7 +145,7 @@
 
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">C. Pasangkan Jawaban (Drag & Drop)</h3>
-                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-hand-pointer text-blue-500 mr-1"></i> Sentuh, tahan, lalu seret kotak biru ke area putus-putus.</p>
+                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-hand-pointer text-blue-500 mr-1"></i> Tekan dan tahan (long-press) kotak biru, lalu seret ke area putus-putus.</p>
                     <div id="sec-c" class="space-y-10">
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Pasangkan istilah dalam alur kerja bengkel berikut dengan fungsinya yang tepat!</p>
@@ -240,24 +243,24 @@
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">F. Uraian & Studi Kasus</h3>
                     <div id="sec-f" class="space-y-6">
                         <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block"><span class="q-num font-bold"></span> Jelaskan pentingnya merencanakan penempatan (layout) peralatan bengkel!</label>
-                            <textarea name="q11" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
+                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Menurut pemahamanmu, mengapa sebuah bisnis jasa servis seperti Bengkel Kita Bersama harus merencanakan penempatan atau tata letak (layout) peralatannya, seperti letak kompresor, rak oli, dan area cuci motor? Jelaskan dengan bahasamu sendiri!</label>
+                            <textarea name="q11" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
                         </div>
                         <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block"><span class="q-num font-bold"></span> Rencanakan kebutuhan peralatan untuk promo "Ganti Oli & Cek Ban 10 Menit"!</label>
-                            <textarea name="q12" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
+                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Bengkel Kita Bersama akan mengadakan promo "Ganti Oli Mesin & Cek Tekanan Ban Super Cepat: Maksimal 10 Menit!". Sebagai mekanik andalan, coba rencanakan kebutuhan peralatan apa saja yang harus sudah siap di dekatmu, dan bagaimana alur kerjamu agar target 10 menit itu tercapai tanpa mengorbankan kualitas!</label>
+                            <textarea name="q12" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
                         </div>
                         <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block"><span class="q-num font-bold"></span> Solusi 3 mekanik berebut 1 kompresor angin tanpa beli baru!</label>
-                            <textarea name="q13" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
+                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Kamu menyadari bahwa waktu tunggu servis pelanggan jadi sangat lama hanya karena 3 orang mekanik sering berebut dan menunggu untuk menggunakan 1 buah selang angin Air Compressor. Rencanakan sebuah metode alur kerja atau solusi tata letak agar masalah ini teratasi tanpa bengkel harus membeli mesin kompresor baru!</label>
+                            <textarea name="q13" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
                         </div>
                         <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block"><span class="q-num font-bold"></span> Buat SOP 5 langkah merawat alat saat bengkel tutup!</label>
-                            <textarea name="q14" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
+                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Alat yang hilang atau rusak bikin proses produksi terhambat. Buatlah sebuah prosedur (Standard Operating Procedure / SOP) sederhana berisi 5 langkah berurutan yang harus dilakukan mekanik untuk merawat alat kerjanya setiap kali jam bengkel tutup!</label>
+                            <textarea name="q14" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>
                         </div>
                         <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block text-justify"><span class="q-num font-bold"></span> <b>STUDI KASUS:</b> Analisis kelemahan Bengkel A (alat lengkap tapi berantakan & lama) dibanding Bengkel B (alat standar tapi rapi & cepat), dan berikan 3 saran evaluasi!</label>
-                            <textarea name="q15" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
+                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> <b>STUDI KASUS:</b> Bayangkan kamu sedang merancang sistem kerja untuk Bengkel Kita Bersama yang berlokasi di Jl. Pondok Lele Kp. Bakan Sereh Desa Dawuan Barat. Sebelum buka, kamu mengamati dua bengkel kompetitor di sekitar sana:<br><br>- <b>Bengkel A:</b> Punya alat yang sangat lengkap dan mahal, tapi mekaniknya sering mondar-mandir mencari kunci yang tercecer, sehingga satu servis ringan butuh waktu 2 jam. Sering terjadi baut yang tertukar.<br>- <b>Bengkel B:</b> Alatnya standar biasa, tapi mekaniknya punya nampan khusus per jenis servis, alat selalu dikembalikan ke tempatnya, sehingga servis ringan cuma butuh 45 menit dengan hasil memuaskan.<br><br>Analisislah apa kelemahan fatal pada sistem manajemen alat dan alur kerja di Bengkel A! Lalu, berikan minimal 3 saran evaluasi kritis agar Bengkel Kita Bersama nantinya bisa beroperasi seefisien Bengkel B!</label>
+                            <textarea name="q15" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik analisis dan saran Anda di sini..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -372,7 +375,6 @@
             }
         }, 2000);
 
-        // OPTIMASI ANTI LAG (DEBOUNCE RESIZE)
         let resizeTimer;
         window.addEventListener('resize', () => {
             if (!examActive) return;
@@ -436,7 +438,6 @@
                     }, { offset: Number.NEGATIVE_INFINITY }).element;
                     
                     const draggable = document.querySelector('.dragging');
-                    // OPTIMASI ANTI LAG (Mencegah browser render ulang jika tidak perlu)
                     if (draggable && draggable.nextElementSibling !== afterElement) { 
                         afterElement == null ? list.appendChild(draggable) : list.insertBefore(draggable, afterElement); 
                     }
