@@ -3,66 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ujian Akhir: Perencanaan Manajemen Bengkel & Servis</title>
+    <title>Ujian Akhir: Manajemen Bengkel & Servis</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- DragDropTouch Polyfill: Wajib agar Drag & Drop berfungsi di HP / Layar Sentuh -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DragDropTouch/1.5.7/DragDropTouch.min.js"></script>
     
     <style>
-        /* Anti-Cheat CSS */
-        body {
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-        }
-        .blur-screen { 
-            filter: blur(15px); 
-            pointer-events: none; 
-        }
+        body { user-select: none; -webkit-user-select: none; }
+        .blur-screen { filter: blur(15px); pointer-events: none; }
         
-        /* Drag and Drop Styles */
-        .draggable-item { 
+        /* OPTIMASI CSS ANTI-LAG */
+        .draggable-item, .sortable-item { 
             cursor: grab; 
-            touch-action: none; /* Mencegah scrolling saat mendrag di HP */
-        }
-        .draggable-item:active { 
-            cursor: grabbing; 
-        }
-        .dropzone { 
-            min-height: 50px; 
-            border: 2px dashed #cbd5e1; 
-            transition: all 0.3s ease; 
-        }
-        .dropzone.drag-over { 
-            background-color: #e0f2fe; 
-            border-color: #3b82f6; 
-        }
-        .sortable-item { 
-            cursor: grab; 
-            transition: transform 0.2s ease, box-shadow 0.2s ease; 
             touch-action: none; 
+            will-change: transform; /* Memberitahu GPU untuk bersiap merender gerakan */
         }
-        .sortable-item.dragging { 
-            opacity: 0.5; 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
-        }
-        
-        /* Opsi Radio/Checkbox Hover */
-        .opt-item:hover {
-            background-color: #f8fafc;
-        }
+        .draggable-item:active, .sortable-item:active { cursor: grabbing; }
+        .dropzone { min-height: 50px; border: 2px dashed #cbd5e1; transition: background-color 0.2s; }
+        .dropzone.drag-over { background-color: #e0f2fe; border-color: #3b82f6; }
+        .sortable-item { transition: box-shadow 0.2s ease; }
+        .sortable-item.dragging { opacity: 0.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .opt-item:hover { background-color: #f8fafc; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans antialiased" oncontextmenu="return false;">
 
-    <!-- Halaman Login -->
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border-t-4 border-blue-600">
             <div class="text-center mb-6">
@@ -74,12 +41,14 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                    <input type="text" id="student-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="Masukkan nama lengkap" required>
+                    <input type="text" id="student-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Masukkan nama lengkap" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
-                    <select id="student-class" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                    <select id="student-class" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Pilih Kelas...</option>
+                        <option value="XI TBSM 1">XI TBSM 1</option>
+                        <option value="XI TBSM 2">XI TBSM 2</option>
                         <option value="XI TBSM 1">XI TBSM 1</option>
                         <option value="XI TBSM 2">XI TBSM 2</option>
                     </select>
@@ -93,26 +62,25 @@
                         <li>Ujian HANYA BISA DIKERJAKAN 1 KALI.</li>
                     </ul>
                 </div>
-                <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 mt-4 flex justify-center items-center gap-2">
-                    Mulai Ujian <i class="fas fa-arrow-right"></i>
+                <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mt-4">
+                    Mulai Ujian <i class="fas fa-arrow-right ml-1"></i>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Halaman Ujian -->
     <div id="exam-screen" class="hidden min-h-screen flex flex-col">
         <header class="bg-white shadow-md sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-lg text-gray-900 leading-tight" id="display-name">Nama Siswa</h2>
+                    <h2 class="font-bold text-lg text-gray-900" id="display-name">Nama Siswa</h2>
                     <p class="text-sm text-gray-500" id="display-class">Kelas</p>
                 </div>
                 <div class="text-right flex items-center gap-2 sm:gap-4">
-                    <div class="bg-red-100 text-red-800 px-3 py-1 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap">
+                    <div class="bg-red-100 text-red-800 px-3 py-1 rounded-full font-bold text-xs sm:text-sm">
                         Pelanggaran: <span id="cheat-counter">0</span>/3
                     </div>
-                    <div class="bg-blue-100 text-blue-800 px-3 py-2 sm:px-4 rounded-lg font-mono font-bold text-lg sm:text-xl flex items-center">
+                    <div class="bg-blue-100 text-blue-800 px-3 py-2 sm:px-4 rounded-lg font-mono font-bold text-lg flex items-center">
                         <i class="far fa-clock mr-2"></i> <span id="timer">60:00</span>
                     </div>
                 </div>
@@ -122,81 +90,72 @@
         <main class="flex-grow max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8">
             <form id="exam-form" class="space-y-8">
                 
-                <!-- BAGIAN A: PILIHAN GANDA -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">A. Pilihan Ganda (Pilih satu jawaban)</h3>
+                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">A. Pilihan Ganda</h3>
                     <div id="sec-a" class="space-y-8">
-                        
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Apa tujuan utama kita membuat alur kerja (SOP) yang jelas sebelum mulai mengerjakan servis motor pelanggan?</p>
                             <div class="space-y-2 pl-4" id="opt-q1">
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q1" value="A" class="mt-1"> <span>Agar bengkel terlihat sibuk dan banyak pelanggan yang antre.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q1" value="B" class="mt-1"> <span>Memastikan mekanik tidak punya waktu istirahat agar target tercapai.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q1" value="C" class="mt-1"> <span>Mengurangi waktu yang terbuang percuma dan meminimalisir kesalahan kerja mekanik.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q1" value="D" class="mt-1"> <span>Agar pemilik bengkel bisa memotong gaji mekanik yang bekerja lambat.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q1" value="E" class="mt-1"> <span>Menambah biaya tagihan servis kepada pelanggan karena bengkel memiliki sistem.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="A" class="mt-1"> <span>Agar bengkel terlihat sibuk dan banyak pelanggan yang antre.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="B" class="mt-1"> <span>Memastikan mekanik tidak punya waktu istirahat agar target tercapai.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="C" class="mt-1"> <span>Mengurangi waktu yang terbuang percuma dan meminimalisir kesalahan kerja mekanik.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="D" class="mt-1"> <span>Agar pemilik bengkel bisa memotong gaji mekanik yang bekerja lambat.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="E" class="mt-1"> <span>Menambah biaya tagihan servis kepada pelanggan karena bengkel memiliki sistem.</span></label>
                             </div>
                         </div>
-
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Pelanggan datang dengan Honda Vario untuk ganti kampas rem depan cakram dan ganti oli mesin. Agar kerjamu efisien dan tidak bolak-balik mengambil alat, perlengkapan utama apa saja yang wajib kamu siapkan di tool trolley sebelum mulai membongkar?</p>
                             <div class="space-y-2 pl-4" id="opt-q2">
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q2" value="A" class="mt-1"> <span>Kunci T-8, T-10, kunci ring 12, obeng plus, palu besi besar, dan cairan pendingin.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q2" value="B" class="mt-1"> <span>Kunci T-8, kunci pas 12, obeng minus, tang potong, dan pelumas rantai.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q2" value="C" class="mt-1"> <span>Kunci L bintang/heksagonal, Kunci ring/pas 12, tracker CVT, dan obeng plus.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q2" value="D" class="mt-1"> <span>Kunci L (sesuai baut kaliper), Kunci ring/shock 12, tang, wadah oli bekas, alat pendorong piston rem, dan kain lap.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="radio" name="q2" value="E" class="mt-1"> <span>Kunci inggris, obeng ketok, tang buaya, wadah oli bekas, dan sikat kawat.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="A" class="mt-1"> <span>Kunci T-8, T-10, kunci ring 12, obeng plus, palu besi besar, dan cairan pendingin.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="B" class="mt-1"> <span>Kunci T-8, kunci pas 12, obeng minus, tang potong, dan pelumas rantai.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="C" class="mt-1"> <span>Kunci L bintang/heksagonal, Kunci ring/pas 12, tracker CVT, dan obeng plus.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="D" class="mt-1"> <span>Kunci L (sesuai baut kaliper), Kunci ring/shock 12, tang, wadah oli bekas, alat pendorong piston rem, dan kain lap.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="E" class="mt-1"> <span>Kunci inggris, obeng ketok, tang buaya, wadah oli bekas, dan sikat kawat.</span></label>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- BAGIAN B: PILIHAN GANDA KOMPLEKS -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">B. Pilihan Ganda Kompleks (Pilih 2 atau lebih jawaban)</h3>
+                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">B. Pilihan Ganda Kompleks (Pilih 2 atau lebih)</h3>
                     <div id="sec-b" class="space-y-8">
-                        
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Di antara pilihan berikut, mana saja yang termasuk dalam komponen perencanaan "Kebutuhan Peralatan" di sebuah bengkel resmi?</p>
                             <div class="space-y-2 pl-4" id="opt-q3">
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q3" value="A" class="mt-1 rounded text-blue-600"> <span>Mengatur jadwal libur mekanik setiap hari Minggu.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q3" value="B" class="mt-1 rounded text-blue-600"> <span>Menyediakan Bike Lift (Bikelift) agar mekanik bekerja dengan postur yang nyaman.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q3" value="C" class="mt-1 rounded text-blue-600"> <span>Membuat nota pembayaran rangkap tiga untuk kasir.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q3" value="D" class="mt-1 rounded text-blue-600"> <span>Menyiapkan Special Service Tool (SST) khusus untuk membongkar sistem injeksi.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q3" value="E" class="mt-1 rounded text-blue-600"> <span>Menyediakan shadow board (papan alat) agar kunci-kunci mudah dicari dan dikembalikan.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="A" class="mt-1 rounded text-blue-600"> <span>Mengatur jadwal libur mekanik setiap hari Minggu.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="B" class="mt-1 rounded text-blue-600"> <span>Menyediakan Bike Lift (Bikelift) agar mekanik bekerja dengan postur yang nyaman.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="C" class="mt-1 rounded text-blue-600"> <span>Membuat nota pembayaran rangkap tiga untuk kasir.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="D" class="mt-1 rounded text-blue-600"> <span>Menyiapkan Special Service Tool (SST) khusus untuk membongkar sistem injeksi.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="E" class="mt-1 rounded text-blue-600"> <span>Menyediakan shadow board (papan alat) agar kunci-kunci mudah dicari dan dikembalikan.</span></label>
                             </div>
                         </div>
-
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Bayangkan kamu ditunjuk menjadi Kepala Mekanik. Untuk memastikan alur kerja "Servis Ringan" berjalan cepat, metode kerja apa saja yang akan kamu terapkan pada timmu?</p>
                             <div class="space-y-2 pl-4" id="opt-q4">
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q4" value="A" class="mt-1 rounded text-blue-600"> <span>Mewajibkan mekanik menyiapkan nampan berisi suku cadang fast-moving sebelum motor naik ke bikelift.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q4" value="B" class="mt-1 rounded text-blue-600"> <span>Membiarkan mekanik mencari scanner injeksi ke bengkel sebelah saat sedang butuh.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q4" value="C" class="mt-1 rounded text-blue-600"> <span>Menerapkan sistem pembersihan part (komponen) bersamaan saat oli mesin sedang dikuras.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q4" value="D" class="mt-1 rounded text-blue-600"> <span>Menunggu pelanggan komplain baru melakukan pengecekan tekanan angin ban.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg transition-colors"><input type="checkbox" name="q4" value="E" class="mt-1 rounded text-blue-600"> <span>Melakukan test ride (uji jalan) singkat oleh Quality Control setelah mekanik selesai merakit komponen.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="A" class="mt-1 rounded text-blue-600"> <span>Mewajibkan mekanik menyiapkan nampan berisi suku cadang fast-moving sebelum motor naik ke bikelift.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="B" class="mt-1 rounded text-blue-600"> <span>Membiarkan mekanik mencari scanner injeksi ke bengkel sebelah saat sedang butuh.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="C" class="mt-1 rounded text-blue-600"> <span>Menerapkan sistem pembersihan part (komponen) bersamaan saat oli mesin sedang dikuras.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="D" class="mt-1 rounded text-blue-600"> <span>Menunggu pelanggan komplain baru melakukan pengecekan tekanan angin ban.</span></label>
+                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="E" class="mt-1 rounded text-blue-600"> <span>Melakukan test ride (uji jalan) singkat oleh Quality Control setelah mekanik selesai merakit komponen.</span></label>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- BAGIAN C: DRAG AND DROP -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">C. Pasangkan Jawaban (Drag & Drop)</h3>
-                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-hand-pointer text-blue-500 mr-1"></i> Sentuh, tahan, lalu seret kotak biru ke dalam area putus-putus yang sesuai.</p>
+                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-hand-pointer text-blue-500 mr-1"></i> Sentuh, tahan, lalu seret kotak biru ke area putus-putus.</p>
                     <div id="sec-c" class="space-y-10">
-                        
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Pasangkan istilah dalam alur kerja bengkel berikut dengan fungsinya yang tepat!</p>
                             <div class="flex flex-col md:flex-row gap-6">
                                 <div class="w-full md:w-1/3 bg-blue-50 p-4 rounded-xl border border-blue-200">
-                                    <h4 class="text-sm font-bold text-blue-800 mb-3 text-center">Pilihan Jawaban</h4>
                                     <div class="space-y-2 min-h-[50px]" id="source-q5">
-                                        <div draggable="true" id="q5_A" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-blue-700">Shadow Board</div>
-                                        <div draggable="true" id="q5_B" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-blue-700">Check Sheet (PKB)</div>
-                                        <div draggable="true" id="q5_C" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-blue-700">SOP</div>
-                                        <div draggable="true" id="q5_D" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-blue-700">Work Flow</div>
-                                        <div draggable="true" id="q5_E" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-blue-700">Special Service Tool (SST)</div>
+                                        <div draggable="true" id="q5_A" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Shadow Board</div>
+                                        <div draggable="true" id="q5_B" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Check Sheet (PKB)</div>
+                                        <div draggable="true" id="q5_C" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">SOP</div>
+                                        <div draggable="true" id="q5_D" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Work Flow</div>
+                                        <div draggable="true" id="q5_E" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Special Service Tool (SST)</div>
                                     </div>
                                 </div>
                                 <div class="w-full md:w-2/3 space-y-3">
@@ -213,13 +172,12 @@
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Cocokkan jenis pekerjaan servis di bawah ini dengan kebutuhan peralatan khusus (SST)!</p>
                             <div class="flex flex-col md:flex-row gap-6">
                                 <div class="w-full md:w-1/3 bg-green-50 p-4 rounded-xl border border-green-200">
-                                    <h4 class="text-sm font-bold text-green-800 mb-3 text-center">Pilihan Jawaban</h4>
                                     <div class="space-y-2 min-h-[50px]" id="source-q6">
-                                        <div draggable="true" id="q6_A" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-emerald-700">Jangka Sorong</div>
-                                        <div draggable="true" id="q6_B" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-emerald-700">Diagnostic Scanner</div>
-                                        <div draggable="true" id="q6_C" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-emerald-700">Fuel Pressure Gauge</div>
-                                        <div draggable="true" id="q6_D" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-emerald-700">Tracker Bearing</div>
-                                        <div draggable="true" id="q6_E" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none hover:bg-emerald-700">Tracker CVT</div>
+                                        <div draggable="true" id="q6_A" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Jangka Sorong</div>
+                                        <div draggable="true" id="q6_B" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Diagnostic Scanner</div>
+                                        <div draggable="true" id="q6_C" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Fuel Pressure Gauge</div>
+                                        <div draggable="true" id="q6_D" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Tracker Bearing</div>
+                                        <div draggable="true" id="q6_E" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Tracker CVT</div>
                                     </div>
                                 </div>
                                 <div class="w-full md:w-2/3 space-y-3">
@@ -234,93 +192,80 @@
                     </div>
                 </div>
 
-                <!-- BAGIAN D: URUTKAN JAWABAN -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">D. Urutkan Jawaban (Drag ke Atas/Bawah)</h3>
-                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-arrows-alt-v text-blue-500 mr-1"></i> Tahan dan geser kotak ke atas atau ke bawah untuk menyusun urutan yang benar.</p>
+                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">D. Urutkan Jawaban</h3>
                     <div id="sec-d" class="space-y-8">
-                        
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Urutkan langkah-langkah alur kerja "Penerimaan Jasa Servis" yang paling efisien!</p>
                             <ul class="sortable-list space-y-2 bg-gray-50 p-4 rounded-xl border" id="sort-q7">
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="A"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">Mekanik memasukkan motor ke pit/bikelift dan mulai mengerjakan sesuai form.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="B"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">Pelanggan disambut oleh Service Advisor (SA).</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="C"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">Kasir memanggil pelanggan untuk pembayaran dan penyerahan kunci motor.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="D"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">Motor selesai, dicek oleh Kepala Mekanik (Final Check) dan dicuci.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="E"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">SA mencatat keluhan di formulir PKB dan mengestimasi biaya/waktu.</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="A"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Mekanik memasukkan motor ke pit/bikelift dan mulai mengerjakan sesuai form.</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="B"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Pelanggan disambut oleh Service Advisor (SA).</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="C"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Kasir memanggil pelanggan untuk pembayaran dan penyerahan kunci motor.</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="D"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Motor selesai, dicek oleh Kepala Mekanik (Final Check) dan dicuci.</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="E"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">SA mencatat keluhan di formulir PKB dan mengestimasi biaya/waktu.</span></li>
                             </ul>
                         </div>
-
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Urutkan metode kerja standar yang efisien dan aman saat kamu melakukan servis CVT motor matic!</p>
                             <ul class="sortable-list space-y-2 bg-gray-50 p-4 rounded-xl border" id="sort-q8">
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="A"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">Membersihkan area dalam CVT dengan udara bertekanan dan cairan pembersih.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="B"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">Membuka cover (tutup) blok CVT menggunakan kunci T-8.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="C"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">Memasang kembali komponen, mengencangkan dengan torsi, dan menutup cover.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="D"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">Melepas puli depan dan puli belakang menggunakan tracker khusus CVT.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none hover:border-blue-300" data-id="E"><i class="fas fa-grip-lines text-gray-400 cursor-move text-lg"></i><span class="text-sm">Mengecek kondisi v-belt, roller, dan kampas ganda.</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="A"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Membersihkan area dalam CVT dengan udara bertekanan dan cairan pembersih.</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="B"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Membuka cover (tutup) blok CVT menggunakan kunci T-8.</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="C"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Memasang kembali komponen, mengencangkan dengan torsi, dan menutup cover.</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="D"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Melepas puli depan dan puli belakang menggunakan tracker khusus CVT.</span></li>
+                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="E"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Mengecek kondisi v-belt, roller, dan kampas ganda.</span></li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <!-- BAGIAN E: BENAR ATAU SALAH -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">E. Benar atau Salah</h3>
                     <div id="sec-e" class="space-y-6">
-                        
                         <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3 text-justify leading-relaxed"><span class="q-num font-bold"></span> "Mengabaikan penempatan alat pada shadow board atau tool box setelah selesai digunakan tidak akan mempengaruhi efisiensi waktu servis mekanik pada pelanggan berikutnya."</p>
+                            <p class="font-medium text-gray-800 mb-3 text-justify"><span class="q-num font-bold"></span> "Mengabaikan penempatan alat pada shadow board atau tool box setelah selesai digunakan tidak akan mempengaruhi efisiensi waktu servis mekanik pada pelanggan berikutnya."</p>
                             <div class="flex gap-4 sm:gap-6 pl-4">
-                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center transition-colors hover:bg-green-50 hover:border-green-300"><input type="radio" name="q9" value="BENAR"> <span class="font-bold text-green-700">BENAR</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center transition-colors hover:bg-red-50 hover:border-red-300"><input type="radio" name="q9" value="SALAH"> <span class="font-bold text-red-700">SALAH</span></label>
+                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center"><input type="radio" name="q9" value="BENAR"> <span class="font-bold text-green-700">BENAR</span></label>
+                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center"><input type="radio" name="q9" value="SALAH"> <span class="font-bold text-red-700">SALAH</span></label>
                             </div>
                         </div>
-
                         <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3 text-justify leading-relaxed"><span class="q-num font-bold"></span> "Mekanik A selalu membongkar area CVT dan cover body injeksi secara bersamaan lalu alat-alatnya dicampur dalam satu nampan. Sementara Mekanik B menyelesaikan area CVT dulu sampai rapi, mengembalikan alatnya, baru pindah membongkar area injeksi. Dari segi perencanaan alur kerja dan risiko komponen hilang, metode Mekanik B lebih efisien dan terencana dibandingkan Mekanik A."</p>
+                            <p class="font-medium text-gray-800 mb-3 text-justify"><span class="q-num font-bold"></span> "Mekanik A selalu membongkar area CVT dan cover body injeksi secara bersamaan lalu alat-alatnya dicampur dalam satu nampan. Sementara Mekanik B menyelesaikan area CVT dulu sampai rapi, mengembalikan alatnya, baru pindah membongkar area injeksi. Dari segi perencanaan alur kerja dan risiko komponen hilang, metode Mekanik B lebih efisien dan terencana dibandingkan Mekanik A."</p>
                             <div class="flex gap-4 sm:gap-6 pl-4">
-                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center transition-colors hover:bg-green-50 hover:border-green-300"><input type="radio" name="q10" value="BENAR"> <span class="font-bold text-green-700">BENAR</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center transition-colors hover:bg-red-50 hover:border-red-300"><input type="radio" name="q10" value="SALAH"> <span class="font-bold text-red-700">SALAH</span></label>
+                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center"><input type="radio" name="q10" value="BENAR"> <span class="font-bold text-green-700">BENAR</span></label>
+                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center"><input type="radio" name="q10" value="SALAH"> <span class="font-bold text-red-700">SALAH</span></label>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- BAGIAN F: URAIAN SINGKAT -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">F. Uraian & Studi Kasus</h3>
                     <div id="sec-f" class="space-y-6">
-                        
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block"><span class="q-num font-bold"></span> Jelaskan pentingnya merencanakan penempatan (layout) peralatan bengkel!</label>
-                            <textarea name="q11" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
+                            <textarea name="q11" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
                         </div>
-
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block"><span class="q-num font-bold"></span> Rencanakan kebutuhan peralatan untuk promo "Ganti Oli & Cek Ban 10 Menit"!</label>
-                            <textarea name="q12" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
+                            <textarea name="q12" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
                         </div>
-
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block"><span class="q-num font-bold"></span> Solusi 3 mekanik berebut 1 kompresor angin tanpa beli baru!</label>
-                            <textarea name="q13" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
+                            <textarea name="q13" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
                         </div>
-
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block"><span class="q-num font-bold"></span> Buat SOP 5 langkah merawat alat saat bengkel tutup!</label>
-                            <textarea name="q14" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors bg-gray-50 focus:bg-white" placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>
+                            <textarea name="q14" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
                         </div>
-
                         <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> <b>STUDI KASUS:</b> Analisis kelemahan Bengkel A (alat lengkap tapi berantakan & lama) dibanding Bengkel B (alat standar tapi rapi & cepat), dan berikan 3 saran evaluasi!</label>
-                            <textarea name="q15" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors bg-gray-50 focus:bg-white" placeholder="Ketik analisis dan saran Anda di sini..."></textarea>
+                            <label class="font-medium text-gray-800 mb-2 block text-justify"><span class="q-num font-bold"></span> <b>STUDI KASUS:</b> Analisis kelemahan Bengkel A (alat lengkap tapi berantakan & lama) dibanding Bengkel B (alat standar tapi rapi & cepat), dan berikan 3 saran evaluasi!</label>
+                            <textarea name="q15" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
                         </div>
                     </div>
                 </div>
 
                 <div class="flex justify-end pt-4 pb-12">
-                    <button type="button" id="btn-submit" onclick="confirmSubmit()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-xl shadow-lg text-lg flex items-center gap-3 transition-transform transform hover:scale-105">
+                    <button type="button" id="btn-submit" onclick="confirmSubmit()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-xl shadow-lg flex items-center gap-3">
                         <i class="fas fa-paper-plane"></i> Selesai & Kirim Jawaban
                     </button>
                 </div>
@@ -329,25 +274,15 @@
     </div>
 
     <script>
-        /* =========================================
-           KONFIGURASI UTAMA
-        ========================================= */
+        // MASUKKAN URL GOOGLE SCRIPT ANDA DI BAWAH INI
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyA-LXP-51FKwQFaeDnzd_Czt9qo3pprrn72EH_mQGrb9qqJf1Xb7yX3PamLCc8rUiU0A/exec'; 
         
-        /* STATE UJIAN */
-        let studentName = ""; 
-        let studentClass = "";
-        let cheatCount = 0; 
-        let examActive = false;
-        let timeLeft = 3600; // 60 Menit
-        let timerInterval;
+        let studentName = "", studentClass = "";
+        let cheatCount = 0, examActive = false;
+        let timeLeft = 3600, timerInterval;
         let initialWidth = window.innerWidth;
 
-        /* =========================================
-           INISIALISASI & LOGIN
-        ========================================= */
         window.onload = function() {
-            // Blokir akses jika sudah pernah mengerjakan
             if (localStorage.getItem('ujian_bengkel_selesai') === 'true') {
                 document.getElementById('login-screen').innerHTML = `
                     <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border-t-4 border-red-600 text-center">
@@ -361,24 +296,18 @@
         function startExam() {
             studentName = document.getElementById('student-name').value.trim();
             studentClass = document.getElementById('student-class').value;
-
             if (!studentName || !studentClass) {
                 Swal.fire({ icon: 'error', title: 'Oops...', text: 'Silakan isi Nama dan Kelas terlebih dahulu!' });
                 return;
             }
 
-            // Jalankan pengacakan soal
             randomizeExam();
-
-            // Set Data Diri di Header
             document.getElementById('display-name').textContent = studentName;
             document.getElementById('display-class').textContent = studentClass;
-
-            // Fullscreen Request (Anti-Cheat Ringan)
+            
             const elem = document.documentElement;
-            if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => console.log("Fullscreen ditolak")); }
+            if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => {}); }
 
-            // Ganti Layar
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('exam-screen').classList.remove('hidden');
             
@@ -387,9 +316,6 @@
             initDragAndDrop();
         }
 
-        /* =========================================
-           SISTEM PENGACAKAN (SHUFFLE)
-        ========================================= */
         function randomizeExam() {
             const shuffleElements = (containerId, itemClass) => {
                 const container = document.getElementById(containerId);
@@ -402,55 +328,25 @@
                 items.forEach(item => container.appendChild(item)); 
             };
 
-            // Acak Opsi Pilihan Ganda
-            shuffleElements('opt-q1', '.opt-item');
-            shuffleElements('opt-q2', '.opt-item');
-            shuffleElements('opt-q3', '.opt-item');
-            shuffleElements('opt-q4', '.opt-item');
+            ['opt-q1','opt-q2','opt-q3','opt-q4'].forEach(id => shuffleElements(id, '.opt-item'));
+            ['source-q5','source-q6'].forEach(id => shuffleElements(id, '.draggable-item'));
+            ['sort-q7','sort-q8'].forEach(id => shuffleElements(id, '.sortable-item'));
+            ['sec-a','sec-b','sec-c','sec-d','sec-e','sec-f'].forEach(id => shuffleElements(id, '.q-block'));
 
-            // Acak Jawaban Drag & Drop
-            shuffleElements('source-q5', '.draggable-item');
-            shuffleElements('source-q6', '.draggable-item');
-
-            // Acak Posisi Soal Urutkan
-            shuffleElements('sort-q7', '.sortable-item');
-            shuffleElements('sort-q8', '.sortable-item');
-
-            // Acak Posisi Soal per Kategori
-            shuffleElements('sec-a', '.q-block');
-            shuffleElements('sec-b', '.q-block');
-            shuffleElements('sec-c', '.q-block');
-            shuffleElements('sec-d', '.q-block');
-            shuffleElements('sec-e', '.q-block');
-            shuffleElements('sec-f', '.q-block');
-
-            // Format Ulang Penomoran
             let currentNumber = 1;
-            document.querySelectorAll('.q-block').forEach(block => {
-                const numberSpan = block.querySelector('.q-num');
-                if (numberSpan) {
-                    numberSpan.textContent = currentNumber + ". ";
-                    currentNumber++;
-                }
+            document.querySelectorAll('.q-block .q-num').forEach(span => {
+                span.textContent = currentNumber + ". ";
+                currentNumber++;
             });
         }
 
-        /* =========================================
-           TIMER & ANTI-CHEAT
-        ========================================= */
         function startTimer() {
             timerInterval = setInterval(() => {
-                if(timeLeft <= 0) { 
-                    clearInterval(timerInterval); 
-                    autoSubmit("Waktu Habis!"); 
-                    return; 
-                }
+                if(timeLeft <= 0) { clearInterval(timerInterval); autoSubmit("Waktu Habis!"); return; }
                 timeLeft--;
                 const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
                 const s = (timeLeft % 60).toString().padStart(2, '0');
                 document.getElementById('timer').textContent = `${m}:${s}`;
-                
-                // Peringatan sisa 5 menit
                 if (timeLeft === 300) {
                     document.getElementById('timer').classList.replace('bg-blue-100', 'bg-red-100');
                     document.getElementById('timer').classList.replace('text-blue-800', 'text-red-800');
@@ -462,20 +358,13 @@
             if (!examActive) return;
             cheatCount++; 
             document.getElementById('cheat-counter').textContent = cheatCount;
-            
             if (cheatCount >= 3) {
                 autoSubmit("Diskualifikasi: Melanggar aturan (Split Screen/Pindah Tab) lebih dari 3 kali.");
             } else {
-                Swal.fire({ 
-                    icon: 'warning', 
-                    title: 'Peringatan Pelanggaran!', 
-                    text: `${reason}. Ini adalah peringatan ${cheatCount} dari 3.`, 
-                    confirmButtonColor: '#d33' 
-                });
+                Swal.fire({ icon: 'warning', title: 'Peringatan Pelanggaran!', text: `${reason}. Peringatan ${cheatCount} dari 3.`, confirmButtonColor: '#d33' });
             }
         }
 
-        // Cek Kehilangan Fokus Layar (Membuka aplikasi melayang/notifikasi)
         setInterval(() => {
             if (examActive && !document.hasFocus()) {
                 document.body.classList.add('blur-screen'); 
@@ -485,23 +374,22 @@
             }
         }, 2000);
 
-        // Cek Perubahan Lebar Layar (Split Screen)
+        // OPTIMASI ANTI LAG (DEBOUNCE RESIZE)
+        let resizeTimer;
         window.addEventListener('resize', () => {
             if (!examActive) return;
-            // Gunakan batas > 150px untuk mencegah Virtual Keyboard (di HP) memicu peringatan
-            let widthChange = Math.abs(window.innerWidth - initialWidth);
-            if (widthChange > 150) {
-                handleCheatDetected("Terdeteksi menggunakan Split Screen atau mengubah ukuran jendela");
-            }
-            initialWidth = window.innerWidth;
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                let widthChange = Math.abs(window.innerWidth - initialWidth);
+                if (widthChange > 150) handleCheatDetected("Terdeteksi menggunakan Split Screen");
+                initialWidth = window.innerWidth;
+            }, 500); 
         });
 
-        // Cek Pindah Tab Browser
         document.addEventListener("visibilitychange", () => {
             if (examActive && document.hidden) handleCheatDetected("Meninggalkan Tab Ujian");
         });
 
-        // Blokir Keyboard Shortcut (Copy, Inspect, PrintScreen)
         document.addEventListener('keydown', (e) => {
             if (!examActive) return;
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) || (e.ctrlKey && e.key === 'U')) {
@@ -516,39 +404,22 @@
             }
         });
 
-        /* =========================================
-           LOGIKA DRAG AND DROP (TERMASUK TOUCH)
-        ========================================= */
         function initDragAndDrop() {
-            const draggables = document.querySelectorAll('.draggable-item');
-            const dropzones = document.querySelectorAll('.dropzone');
-            
-            draggables.forEach(d => {
-                d.addEventListener('dragstart', (e) => { 
-                    d.classList.add('dragging'); 
-                    e.dataTransfer.setData('text', d.id); 
-                });
+            document.querySelectorAll('.draggable-item').forEach(d => {
+                d.addEventListener('dragstart', (e) => { d.classList.add('dragging'); e.dataTransfer.setData('text', d.id); });
                 d.addEventListener('dragend', () => d.classList.remove('dragging'));
             });
 
-            dropzones.forEach(z => {
-                z.addEventListener('dragover', (e) => { 
-                    e.preventDefault(); 
-                    z.classList.add('drag-over'); 
-                });
+            document.querySelectorAll('.dropzone').forEach(z => {
+                z.addEventListener('dragover', (e) => { e.preventDefault(); z.classList.add('drag-over'); });
                 z.addEventListener('dragleave', () => z.classList.remove('drag-over'));
                 z.addEventListener('drop', (e) => {
-                    e.preventDefault(); 
-                    z.classList.remove('drag-over');
+                    e.preventDefault(); z.classList.remove('drag-over');
                     const id = e.dataTransfer.getData('text');
                     if (!id) return;
-                    
                     const dElement = document.getElementById(id);
                     if (dElement && dElement.dataset.group === z.dataset.group) {
-                        // Kembalikan item lama (jika ada) ke pool jawaban
-                        if (z.children.length > 0) {
-                            document.getElementById(`source-${z.dataset.group}`).appendChild(z.children[0]);
-                        }
+                        if (z.children.length > 0) document.getElementById(`source-${z.dataset.group}`).appendChild(z.children[0]);
                         z.appendChild(dElement);
                     }
                 });
@@ -556,12 +427,8 @@
 
             const sortables = document.querySelectorAll('.sortable-list');
             sortables.forEach(list => {
-                list.addEventListener('dragstart', (e) => { 
-                    if(e.target.classList.contains('sortable-item')) e.target.classList.add('dragging'); 
-                });
-                list.addEventListener('dragend', (e) => { 
-                    if(e.target.classList.contains('sortable-item')) e.target.classList.remove('dragging'); 
-                });
+                list.addEventListener('dragstart', (e) => { if(e.target.classList.contains('sortable-item')) e.target.classList.add('dragging'); });
+                list.addEventListener('dragend', (e) => { if(e.target.classList.contains('sortable-item')) e.target.classList.remove('dragging'); });
                 list.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     const afterElement = [...list.querySelectorAll('.sortable-item:not(.dragging)')].reduce((closest, child) => {
@@ -571,58 +438,37 @@
                     }, { offset: Number.NEGATIVE_INFINITY }).element;
                     
                     const draggable = document.querySelector('.dragging');
-                    if (draggable) { 
+                    // OPTIMASI ANTI LAG (Mencegah browser render ulang jika tidak perlu)
+                    if (draggable && draggable.nextElementSibling !== afterElement) { 
                         afterElement == null ? list.appendChild(draggable) : list.insertBefore(draggable, afterElement); 
                     }
                 });
             });
         }
 
-        /* =========================================
-           SISTEM PENGUMPULAN (SUBMIT)
-        ========================================= */
         function confirmSubmit() {
             Swal.fire({ 
-                title: 'Kirim Jawaban Sekarang?', 
-                text: "Pastikan Anda telah mengisi seluruh jawaban. Ujian tidak bisa diulang kembali!", 
+                title: 'Kirim Jawaban?', 
+                text: "Pastikan Anda telah mengisi seluruh jawaban. Ujian tidak bisa diulang!", 
                 icon: 'question', 
-                showCancelButton: true, 
-                confirmButtonColor: '#2563eb', 
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Kirim Data!', 
-                cancelButtonText: 'Batal' 
-            }).then((result) => { 
-                if (result.isConfirmed) processSubmission(); 
-            });
+                showCancelButton: true, confirmButtonColor: '#2563eb', cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Kirim Data!', cancelButtonText: 'Batal' 
+            }).then((result) => { if (result.isConfirmed) processSubmission(); });
         }
 
         function autoSubmit(reason) {
-            examActive = false; 
-            clearInterval(timerInterval);
-            Swal.fire({ 
-                title: 'Ujian Berakhir!', 
-                text: reason, 
-                icon: 'warning', 
-                allowOutsideClick: false, 
-                showConfirmButton: false, 
-                timer: 4000 
-            }).then(() => processSubmission());
+            examActive = false; clearInterval(timerInterval);
+            Swal.fire({ title: 'Ujian Berakhir!', text: reason, icon: 'warning', allowOutsideClick: false, showConfirmButton: false, timer: 4000 })
+            .then(() => processSubmission());
         }
 
         function processSubmission() {
-            examActive = false; 
-            clearInterval(timerInterval); 
-            document.body.classList.remove('blur-screen');
+            examActive = false; clearInterval(timerInterval); document.body.classList.remove('blur-screen');
             
-            // Kunci tombol submit untuk mencegah pengiriman berulang
             const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.disabled = true;
-            btnSubmit.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Memproses...`;
+            btnSubmit.disabled = true; btnSubmit.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Memproses...`;
 
-            const form = document.getElementById('exam-form'); 
-            const formData = new FormData(form);
-
-            // Fungsi ambil data Drag & Drop
+            const form = document.getElementById('exam-form'); const formData = new FormData(form);
             const getDropAnswers = (group) => {
                 let ans = [];
                 document.querySelectorAll(`[data-group="${group}"].dropzone`).forEach(z => {
@@ -630,75 +476,34 @@
                 });
                 return ans.join(',');
             };
-            
-            // Fungsi ambil data Sorting
-            const getSortAnswers = (id) => {
-                return Array.from(document.getElementById(id).children).map(li => li.dataset.id).join(',');
-            };
+            const getSortAnswers = (id) => Array.from(document.getElementById(id).children).map(li => li.dataset.id).join(',');
 
             const dataToSubmit = {
                 timestamp: new Date().toLocaleString('id-ID'),
-                nama: studentName, 
-                kelas: studentClass, 
-                pelanggaran: cheatCount,
-                q1: formData.get('q1') || '', 
-                q2: formData.get('q2') || '',
-                q3: formData.getAll('q3').join(',') || '', 
-                q4: formData.getAll('q4').join(',') || '',
-                q5: getDropAnswers('q5'), 
-                q6: getDropAnswers('q6'),
-                q7: getSortAnswers('sort-q7'), 
-                q8: getSortAnswers('sort-q8'),
-                q9: formData.get('q9') || '', 
-                q10: formData.get('q10') || '',
-                q11: formData.get('q11') || '', 
-                q12: formData.get('q12') || '',
-                q13: formData.get('q13') || '', 
-                q14: formData.get('q14') || '', 
-                q15: formData.get('q15') || ''
+                nama: studentName, kelas: studentClass, pelanggaran: cheatCount,
+                q1: formData.get('q1') || '', q2: formData.get('q2') || '',
+                q3: formData.getAll('q3').join(',') || '', q4: formData.getAll('q4').join(',') || '',
+                q5: getDropAnswers('q5'), q6: getDropAnswers('q6'),
+                q7: getSortAnswers('sort-q7'), q8: getSortAnswers('sort-q8'),
+                q9: formData.get('q9') || '', q10: formData.get('q10') || '',
+                q11: formData.get('q11') || '', q12: formData.get('q12') || '',
+                q13: formData.get('q13') || '', q14: formData.get('q14') || '', q15: formData.get('q15') || ''
             };
 
-            Swal.fire({ 
-                title: 'Mengirim Jawaban Server...', 
-                html: 'Mohon tunggu, jangan tutup aplikasi ini.', 
-                allowOutsideClick: false, 
-                didOpen: () => Swal.showLoading() 
-            });
+            Swal.fire({ title: 'Mengirim Jawaban...', html: 'Jangan tutup aplikasi ini.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST', 
-                mode: 'no-cors', 
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSubmit)
             }).then(() => {
-                // Simpan Token Kunci ke Browser
                 localStorage.setItem('ujian_bengkel_selesai', 'true');
-                
-                Swal.fire({ 
-                    icon: 'success', 
-                    title: 'Berhasil!', 
-                    text: 'Jawaban Anda telah tersimpan secara aman di server.', 
-                    allowOutsideClick: false, 
-                    confirmButtonText: 'Tutup Aplikasi' 
-                }).then(() => {
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Jawaban tersimpan di server.', allowOutsideClick: false, confirmButtonText: 'Tutup Aplikasi' }).then(() => {
                     if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-                    document.body.innerHTML = `
-                        <div class="min-h-screen flex items-center justify-center bg-gray-100">
-                            <div class="text-center p-8">
-                                <i class="fas fa-check-circle text-6xl text-green-500 mb-4"></i>
-                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Terima Kasih</h1>
-                                <p class="text-gray-600">Ujian telah selesai. Silakan tutup browser Anda.</p>
-                            </div>
-                        </div>`;
+                    document.body.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-gray-100"><div class="text-center p-8"><i class="fas fa-check-circle text-6xl text-green-500 mb-4"></i><h1 class="text-3xl font-bold text-gray-800 mb-2">Terima Kasih</h1><p class="text-gray-600">Ujian telah selesai. Silakan tutup browser Anda.</p></div></div>`;
                 });
             }).catch(err => {
-                btnSubmit.disabled = false;
-                btnSubmit.innerHTML = `<i class="fas fa-paper-plane"></i> Selesai & Kirim Jawaban`;
-                Swal.fire({ 
-                    icon: 'error', 
-                    title: 'Koneksi Gagal', 
-                    text: 'Pastikan internet Anda stabil, lalu klik tombol kirim kembali.'
-                });
+                btnSubmit.disabled = false; btnSubmit.innerHTML = `<i class="fas fa-paper-plane"></i> Selesai & Kirim Jawaban`;
+                Swal.fire({ icon: 'error', title: 'Koneksi Gagal', text: 'Pastikan internet Anda stabil.' });
             });
         }
     </script>
