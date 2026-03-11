@@ -26,8 +26,7 @@
         .sortable-item.dragging { opacity: 0.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .opt-item:hover { background-color: #f8fafc; }
         
-        /* FIX CCTV: Tidak boleh 0px agar browser mau merekam. 
-           Dilempar jauh ke luar layar agar tidak terlihat pengguna */
+        /* Menyembunyikan elemen CCTV secara sempurna agar tetap bisa merekam */
         .cctv-hidden {
             position: fixed;
             top: -9999px;
@@ -77,7 +76,7 @@
                         <li>Ujian HANYA BISA DIKERJAKAN 1 KALI.</li>
                     </ul>
                 </div>
-                <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mt-4">
+                <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mt-4 transition-colors">
                     Mulai Ujian <i class="fas fa-arrow-right ml-1"></i>
                 </button>
             </div>
@@ -265,15 +264,15 @@
                     <div id="sec-f" class="space-y-6">
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Menurut pemahamanmu, mengapa sebuah bisnis jasa servis seperti Bengkel Kita Bersama harus merencanakan penempatan atau tata letak (layout) peralatannya, seperti letak kompresor, rak oli, dan area cuci motor? Jelaskan dengan bahasamu sendiri!</label>
-                            <textarea name="q11" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
+                            <textarea name="q11" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
                         </div>
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Bengkel Kita Bersama akan mengadakan promo "Ganti Oli Mesin & Cek Tekanan Ban Super Cepat: Maksimal 10 Menit!". Sebagai mekanik andalan, coba rencanakan kebutuhan peralatan apa saja yang harus sudah siap di dekatmu, dan bagaimana alur kerjamu agar target 10 menit itu tercapai tanpa mengorbankan kualitas!</label>
-                            <textarea name="q12" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
+                            <textarea name="q12" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
                         </div>
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Kamu menyadari bahwa waktu tunggu servis pelanggan jadi sangat lama hanya karena 3 orang mekanik sering berebut dan menunggu untuk menggunakan 1 buah selang angin Air Compressor. Rencanakan sebuah metode alur kerja atau solusi tata letak agar masalah ini teratasi tanpa bengkel harus membeli mesin kompresor baru!</label>
-                            <textarea name="q13" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
+                            <textarea name="q13" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
                         </div>
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Alat yang hilang atau rusak bikin proses produksi terhambat. Buatlah sebuah prosedur (Standard Operating Procedure / SOP) sederhana berisi 5 langkah berurutan yang harus dilakukan mekanik untuk merawat alat kerjanya setiap kali jam bengkel tutup!</label>
@@ -304,6 +303,10 @@
         let timeLeft = 3600, timerInterval;
         let initialWidth = window.innerWidth;
         let cctvInterval; 
+        
+        // VARIABEL ANTI-CHEAT BARU
+        let isGracePeriod = false; // Masa tenggang awal ujian
+        let ignoredFirstStrike = false; // Pengampunan 1x pelanggaran pertama
 
         window.onload = function() {
             if (localStorage.getItem('ujian_bengkel_selesai') === 'true') {
@@ -350,10 +353,15 @@
                 document.getElementById('exam-screen').classList.remove('hidden');
                 
                 examActive = true; 
+                
+                // MASA TENGGANG 5 DETIK: Browser tidak mendeteksi pelanggaran saat proses loading UI
+                isGracePeriod = true;
+                setTimeout(() => { isGracePeriod = false; }, 5000);
+
                 startTimer(); 
                 initDragAndDrop();
                 
-                cctvInterval = setInterval(captureCCTV, 60000); // 1 menit
+                cctvInterval = setInterval(captureCCTV, 60000); 
             })
             .catch(function(err) {
                 Swal.fire({
@@ -365,7 +373,6 @@
             });
         }
 
-        /* FIX: Mengirim CCTV dengan format text/plain agar tidak ditolak oleh CORS Policy Browser */
         function captureCCTV() {
             if (!examActive) return;
             
@@ -392,7 +399,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload)
-            }).catch(e => console.log("CCTV Fail")); 
+            }).catch(e => console.log("CCTV Mute Fail")); 
         }
 
         function randomizeExam() {
@@ -407,11 +414,15 @@
                 items.forEach(item => container.appendChild(item)); 
             };
 
+            // Mengacak Opsi & Soal
             ['opt-q1','opt-q2','opt-q3','opt-q4'].forEach(id => shuffleElements(id, '.opt-item'));
             ['source-q5','source-q6'].forEach(id => shuffleElements(id, '.draggable-item'));
             ['sort-q7','sort-q8'].forEach(id => shuffleElements(id, '.sortable-item'));
+            
+            // SOAL ESSAI (sec-f) JUGA DIACAK DI SINI
             ['sec-a','sec-b','sec-c','sec-d','sec-e','sec-f'].forEach(id => shuffleElements(id, '.q-block'));
 
+            // Format ulang nomor (1 sampai 15) agar tetap berurutan di layar walau soal teracak
             let currentNumber = 1;
             document.querySelectorAll('.q-block .q-num').forEach(span => {
                 span.textContent = currentNumber + ". ";
@@ -433,14 +444,22 @@
             }, 1000);
         }
 
+        /* --- LOGIKA ANTI CHEAT YANG DIPERBARUI --- */
         function handleCheatDetected(reason) {
-            if (!examActive) return;
+            if (!examActive || isGracePeriod) return; // Abaikan jika masih masa tenggang
+            
+            // PENGAMPUNAN: Abaikan pelanggaran pertama kali terjadi tanpa notif
+            if (!ignoredFirstStrike) {
+                ignoredFirstStrike = true;
+                return; 
+            }
+
             cheatCount++; 
             document.getElementById('cheat-counter').textContent = cheatCount;
             if (cheatCount >= 3) {
-                autoSubmit("Diskualifikasi: Melanggar aturan (Split Screen/Pindah Tab) lebih dari 3 kali.");
+                autoSubmit("Diskualifikasi: Melanggar aturan keamanan sistem lebih dari 3 kali.");
             } else {
-                Swal.fire({ icon: 'warning', title: 'Peringatan Pelanggaran!', text: `${reason}. Peringatan ${cheatCount} dari 3.`, confirmButtonColor: '#d33' });
+                Swal.fire({ icon: 'warning', title: 'Peringatan Pelanggaran!', text: `${reason}. Peringatan ${cheatCount} dari 3. Jika 3 kali, ujian otomatis terkunci.`, confirmButtonColor: '#d33' });
             }
         }
 
@@ -544,7 +563,6 @@
             .then(() => processSubmission());
         }
 
-        /* FIX: Mengirim Jawaban dengan format text/plain */
         function processSubmission() {
             examActive = false; clearInterval(timerInterval); clearInterval(cctvInterval); 
             
