@@ -296,7 +296,7 @@
 
     <script>
         // MASUKKAN URL GOOGLE SCRIPT ANDA DI BAWAH INI
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsigW7tTXEJPt-cmk1fhurVFcCt2HaeTX7B6y8CS_AIJE-IrIursHQa3aVLtis-J-CmQ/exec'; 
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz0pRkvAQniy9TyXGNubtd6tLa6EV8Wa4561q1dX7hwNSPL4ml6w8fkULcLxkHoyHLF7g/exec'; 
         
         let studentName = "", studentClass = "";
         let cheatCount = 0, examActive = false;
@@ -603,6 +603,7 @@
 
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST', 
+                mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(dataToSubmit)
             }).then(() => {
