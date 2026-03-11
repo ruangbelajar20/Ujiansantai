@@ -26,14 +26,17 @@
         .sortable-item.dragging { opacity: 0.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .opt-item:hover { background-color: #f8fafc; }
         
-        /* Menyembunyikan elemen CCTV secara sempurna */
+        /* FIX CCTV: Tidak boleh 0px agar browser mau merekam. 
+           Dilempar jauh ke luar layar agar tidak terlihat pengguna */
         .cctv-hidden {
-            position: absolute;
-            width: 0px;
-            height: 0px;
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 320px;
+            height: 240px;
             opacity: 0;
             pointer-events: none;
-            z-index: -999;
+            z-index: -9999;
         }
     </style>
 </head>
@@ -63,7 +66,6 @@
                         <option value="">Pilih Kelas...</option>
                         <option value="XI TBSM 1">XI TBSM 1</option>
                         <option value="XI TBSM 2">XI TBSM 2</option>
-
                     </select>
                 </div>
                 <div class="bg-red-50 p-4 rounded-lg border border-red-200 mt-4">
@@ -279,7 +281,7 @@
                         </div>
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> <b>STUDI KASUS:</b> Bayangkan kamu sedang merancang sistem kerja untuk Bengkel Kita Bersama yang berlokasi di Jl. Pondok Lele Kp. Bakan Sereh Desa Dawuan Barat. Sebelum buka, kamu mengamati dua bengkel kompetitor di sekitar sana:<br><br>- <b>Bengkel A:</b> Punya alat yang sangat lengkap dan mahal, tapi mekaniknya sering mondar-mandir mencari kunci yang tercecer, sehingga satu servis ringan butuh waktu 2 jam. Sering terjadi baut yang tertukar.<br>- <b>Bengkel B:</b> Alatnya standar biasa, tapi mekaniknya punya nampan khusus per jenis servis, alat selalu dikembalikan ke tempatnya, sehingga servis ringan cuma butuh 45 menit dengan hasil memuaskan.<br><br>Analisislah apa kelemahan fatal pada sistem manajemen alat dan alur kerja di Bengkel A! Lalu, berikan minimal 3 saran evaluasi kritis agar Bengkel Kita Bersama nantinya bisa beroperasi seefisien Bengkel B!</label>
-                            <textarea name="q15" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
+                            <textarea name="q15" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik analisis dan saran Anda di sini..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -301,7 +303,7 @@
         let cheatCount = 0, examActive = false;
         let timeLeft = 3600, timerInterval;
         let initialWidth = window.innerWidth;
-        let cctvInterval; // Interval CCTV
+        let cctvInterval; 
 
         window.onload = function() {
             if (localStorage.getItem('ujian_bengkel_selesai') === 'true') {
@@ -322,7 +324,6 @@
                 return;
             }
 
-            // PROSES AWAL CCTV SEBELUM MASUK UJIAN
             Swal.fire({
                 title: 'Mohon Izinkan Kamera',
                 text: 'Sistem Proctoring membutuhkan akses kamera Anda untuk memulai ujian.',
@@ -335,12 +336,9 @@
             
             navigator.mediaDevices.getUserMedia({ video: true, audio: false })
             .then(function(stream) {
-                // Kamera Diizinkan
                 video.srcObject = stream;
+                Swal.close(); 
                 
-                Swal.close(); // Tutup loading
-                
-                // Lanjut persiapan ujian
                 randomizeExam();
                 document.getElementById('display-name').textContent = studentName;
                 document.getElementById('display-class').textContent = studentClass;
@@ -355,11 +353,9 @@
                 startTimer(); 
                 initDragAndDrop();
                 
-                // Mulai ambil foto secara otomatis setiap 1 Menit (60000 ms)
-                cctvInterval = setInterval(captureCCTV, 60000);
+                cctvInterval = setInterval(captureCCTV, 60000); // 1 menit
             })
             .catch(function(err) {
-                // Kamera Ditolak
                 Swal.fire({
                     icon: 'error',
                     title: 'Akses Ditolak',
@@ -369,44 +365,35 @@
             });
         }
 
-        /* --- FUNGSI MENGAMBIL FOTO CCTV SECARA DIAM-DIAM --- */
+        /* FIX: Mengirim CCTV dengan format text/plain agar tidak ditolak oleh CORS Policy Browser */
         function captureCCTV() {
             if (!examActive) return;
             
             const video = document.getElementById('cctv-video');
             const canvas = document.getElementById('cctv-canvas');
             
-            // Set ukuran kanvas kecil saja agar tidak berat (Resolusi 320x240)
             canvas.width = 320;
             canvas.height = 240;
             const context = canvas.getContext('2d');
             
-            // Gambar frame video ke dalam kanvas
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Ubah kanvas menjadi Base64 Image (Kualitas 50% / 0.5)
             const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
             
-            // Format Nama File: Nama_Kelas_Waktu.jpg
             const timeNow = new Date().toLocaleTimeString('id-ID').replace(/:/g, '-');
             const fileName = `${studentName.replace(/\s+/g, '_')}_${studentClass.replace(/\s+/g, '')}_${timeNow}.jpg`;
 
             const payload = {
                 type: "cctv",
                 filename: fileName,
-                image: dataUrl,
-                mimeType: "image/jpeg"
+                image: dataUrl
             };
 
-            // Kirim diam-diam ke Google Apps Script
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload)
-            }).catch(e => console.log("CCTV Fail")); // Gagal biarkan saja agar siswa tidak panik
+            }).catch(e => console.log("CCTV Fail")); 
         }
-
 
         function randomizeExam() {
             const shuffleElements = (containerId, itemClass) => {
@@ -547,28 +534,22 @@
         }
 
         function autoSubmit(reason) {
-            examActive = false; 
-            clearInterval(timerInterval);
-            clearInterval(cctvInterval); // Matikan CCTV
+            examActive = false; clearInterval(timerInterval);
+            clearInterval(cctvInterval); 
             
             const video = document.getElementById('cctv-video');
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop()); // Matikan lampu kamera
-            }
+            if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); }
 
             Swal.fire({ title: 'Ujian Berakhir!', text: reason, icon: 'warning', allowOutsideClick: false, showConfirmButton: false, timer: 4000 })
             .then(() => processSubmission());
         }
 
+        /* FIX: Mengirim Jawaban dengan format text/plain */
         function processSubmission() {
-            examActive = false; 
-            clearInterval(timerInterval); 
-            clearInterval(cctvInterval); // Matikan CCTV saat mengirim
+            examActive = false; clearInterval(timerInterval); clearInterval(cctvInterval); 
             
             const video = document.getElementById('cctv-video');
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop()); // Matikan lampu kamera
-            }
+            if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); }
 
             document.body.classList.remove('blur-screen');
             
@@ -585,7 +566,6 @@
             };
             const getSortAnswers = (id) => Array.from(document.getElementById(id).children).map(li => li.dataset.id).join(',');
 
-            // Tambahkan "type: ujian" agar server tahu ini form jawaban, bukan form foto cctv
             const dataToSubmit = {
                 type: "ujian", 
                 timestamp: new Date().toLocaleString('id-ID'),
@@ -602,7 +582,8 @@
             Swal.fire({ title: 'Mengirim Jawaban...', html: 'Jangan tutup aplikasi ini.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(dataToSubmit)
             }).then(() => {
                 localStorage.setItem('ujian_bengkel_selesai', 'true');
