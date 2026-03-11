@@ -13,7 +13,9 @@
     
     <style>
         body { user-select: none; -webkit-user-select: none; position: relative; z-index: 0; background-color: #f3f4f6;}
-        .blur-screen { filter: blur(15px); pointer-events: none; }
+        
+        /* PERBAIKAN BUG BLUR: Tidak lagi membuat seluruh body mati, cukup area ujiannya saja */
+        .blur-screen { filter: blur(15px); pointer-events: none; user-select: none; }
         
         .draggable-item, .sortable-item { 
             cursor: grab; 
@@ -26,15 +28,15 @@
         .sortable-item.dragging { opacity: 0.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .opt-item:hover { background-color: #f8fafc; }
         
-        /* FIX KAMERA HITAM: Menipu Browser agar tetap me-render gambar */
+        /* FIX KAMERA HITAM */
         .cctv-hidden {
             position: fixed;
             bottom: 10px;
             right: 10px;
             width: 320px;
             height: 240px;
-            opacity: 0.05; /* Dibuat 5% tembus pandang, jangan 0, agar browser mengira ini masih terlihat */
-            z-index: -9999; /* Ditanam jauh di bawah background abu-abu agar sama sekali tidak terlihat siswa */
+            opacity: 0.05; 
+            z-index: -9999; 
             pointer-events: none;
         }
     </style>
@@ -306,6 +308,7 @@
         
         let isGracePeriod = false; 
         let ignoredFirstStrike = false; 
+        let isWarningOpen = false; // Mencegah popup numpuk
 
         window.onload = function() {
             if (localStorage.getItem('ujian_bengkel_selesai') === 'true') {
@@ -356,8 +359,11 @@
                 document.getElementById('exam-screen').classList.remove('hidden');
                 
                 examActive = true; 
+                
+                // MASA TENGGANG DIPERPANJANG KE 10 DETIK & PAKSA FOKUS KE LAYAR
                 isGracePeriod = true;
-                setTimeout(() => { isGracePeriod = false; }, 5000);
+                window.focus(); // Menarik fokus sistem operasi ke browser
+                setTimeout(() => { isGracePeriod = false; }, 10000);
 
                 startTimer(); 
                 initDragAndDrop();
@@ -447,7 +453,8 @@
         }
 
         function handleCheatDetected(reason) {
-            if (!examActive || isGracePeriod) return; 
+            // Cegah error ganda/numpuk
+            if (!examActive || isGracePeriod || isWarningOpen) return; 
             
             if (!ignoredFirstStrike) {
                 ignoredFirstStrike = true;
@@ -456,19 +463,34 @@
 
             cheatCount++; 
             document.getElementById('cheat-counter').textContent = cheatCount;
+            
+            // Hapus blur agar popup terbaca jelas & tombol bisa diklik
+            document.getElementById('exam-screen').classList.remove('blur-screen');
+
             if (cheatCount >= 3) {
-                autoSubmit("Diskualifikasi: Melanggar aturan keamanan sistem lebih dari 3 kali.");
+                autoSubmit("Anda telah melanggar aturan keamanan (Pindah Tab/Layar) lebih dari 3 kali.");
             } else {
-                Swal.fire({ icon: 'warning', title: 'Peringatan Pelanggaran!', text: `${reason}. Peringatan ${cheatCount} dari 3. Jika 3 kali, ujian otomatis terkunci.`, confirmButtonColor: '#d33' });
+                isWarningOpen = true;
+                Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'Peringatan Pelanggaran!', 
+                    text: `${reason}. Peringatan ${cheatCount} dari 3. Jika 3 kali, ujian otomatis terkunci.`, 
+                    confirmButtonColor: '#d33',
+                    allowOutsideClick: false
+                }).then(() => {
+                    isWarningOpen = false;
+                });
             }
         }
 
         setInterval(() => {
-            if (examActive && !document.hasFocus()) {
-                document.body.classList.add('blur-screen'); 
+            if (!examActive) return;
+            
+            if (!isGracePeriod && !document.hasFocus()) {
+                document.getElementById('exam-screen').classList.add('blur-screen'); 
                 handleCheatDetected("Membuka Layar Lain / Kehilangan Fokus");
-            } else if (examActive && document.hasFocus()) {
-                document.body.classList.remove('blur-screen');
+            } else if (document.hasFocus()) {
+                document.getElementById('exam-screen').classList.remove('blur-screen');
             }
         }, 2000);
 
@@ -478,13 +500,17 @@
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 let widthChange = Math.abs(window.innerWidth - initialWidth);
-                if (widthChange > 150) handleCheatDetected("Terdeteksi menggunakan Split Screen");
+                if (!isGracePeriod && widthChange > 150) {
+                    handleCheatDetected("Terdeteksi menggunakan Split Screen");
+                }
                 initialWidth = window.innerWidth;
             }, 500); 
         });
 
         document.addEventListener("visibilitychange", () => {
-            if (examActive && document.hidden) handleCheatDetected("Meninggalkan Tab Ujian");
+            if (examActive && document.hidden && !isGracePeriod) {
+                handleCheatDetected("Meninggalkan Tab Ujian");
+            }
         });
 
         document.addEventListener('keydown', (e) => {
@@ -553,14 +579,26 @@
         }
 
         function autoSubmit(reason) {
-            examActive = false; clearInterval(timerInterval);
+            examActive = false; 
+            clearInterval(timerInterval);
             clearInterval(cctvInterval); 
             
             const video = document.getElementById('cctv-video');
             if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); }
 
-            Swal.fire({ title: 'Ujian Berakhir!', text: reason, icon: 'warning', allowOutsideClick: false, showConfirmButton: false, timer: 4000 })
-            .then(() => processSubmission());
+            document.getElementById('exam-screen').classList.remove('blur-screen');
+
+            // PERBAIKAN: Popup diskualifikasi wajib diklik agar siswa sadar mereka dikunci
+            Swal.fire({ 
+                title: 'ANDA DIDISKUALIFIKASI!', 
+                text: reason, 
+                icon: 'error', 
+                allowOutsideClick: false, 
+                confirmButtonText: 'Mengerti & Kirim Sisa Jawaban',
+                confirmButtonColor: '#d33'
+            }).then(() => {
+                processSubmission();
+            });
         }
 
         function processSubmission() {
@@ -569,7 +607,7 @@
             const video = document.getElementById('cctv-video');
             if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); }
 
-            document.body.classList.remove('blur-screen');
+            document.getElementById('exam-screen').classList.remove('blur-screen');
             
             const btnSubmit = document.getElementById('btn-submit');
             btnSubmit.disabled = true; btnSubmit.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Memproses...`;
