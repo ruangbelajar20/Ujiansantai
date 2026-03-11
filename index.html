@@ -8,27 +8,51 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Polyfill Layar Sentuh -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/DragDropTouch/1.5.7/DragDropTouch.min.js"></script>
+    
+    <!-- FIX BUG OPPO/ANDROID: Mengganti Polyfill lama dengan SortableJS untuk sentuhan yang 100% mulus -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     
     <style>
         body { user-select: none; -webkit-user-select: none; position: relative; z-index: 0; background-color: #f3f4f6;}
         
-        /* PERBAIKAN BUG BLUR: Tidak lagi membuat seluruh body mati, cukup area ujiannya saja */
         .blur-screen { filter: blur(15px); pointer-events: none; user-select: none; }
         
-        .draggable-item, .sortable-item { 
+        /* CSS Baru untuk SortableJS */
+        .draggable-item { 
             cursor: grab; 
-            will-change: transform; 
+            touch-action: none; /* Wajib agar kotak biru tidak menscroll layar saat ditarik */
         }
-        .draggable-item:active, .sortable-item:active { cursor: grabbing; }
-        .dropzone { min-height: 50px; border: 2px dashed #cbd5e1; transition: background-color 0.2s; }
-        .dropzone.drag-over { background-color: #e0f2fe; border-color: #3b82f6; }
-        .sortable-item { transition: box-shadow 0.2s ease; }
-        .sortable-item.dragging { opacity: 0.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .draggable-item:active { cursor: grabbing; }
+        
+        .dropzone { 
+            min-height: 50px; 
+            border: 2px dashed #cbd5e1; 
+            transition: background-color 0.2s; 
+        }
+        
+        .sortable-item { 
+            transition: box-shadow 0.2s ease; 
+        }
+        
+        /* Area khusus yang disentuh untuk menggeser (Ikon Garis 3) */
+        .drag-handle {
+            cursor: grab;
+            padding: 10px;
+            margin-left: -10px;
+            touch-action: none; /* Mencegah scroll saat menyentuh ikon ini */
+        }
+        .drag-handle:active { cursor: grabbing; }
+        
+        /* Efek bayangan saat item sedang diseret */
+        .sortable-ghost { 
+            opacity: 0.4; 
+            background-color: #e0f2fe; 
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+        }
+        
         .opt-item:hover { background-color: #f8fafc; }
         
-        /* FIX KAMERA HITAM */
+        /* Kamera CCTV Tersembunyi */
         .cctv-hidden {
             position: fixed;
             bottom: 10px;
@@ -67,6 +91,9 @@
                         <option value="">Pilih Kelas...</option>
                         <option value="XI TBSM 1">XI TBSM 1</option>
                         <option value="XI TBSM 2">XI TBSM 2</option>
+                        <option value="XII TBSM 1">XII TBSM 1</option>
+                        <option value="XII TBSM 2">XII TBSM 2</option>
+                        <option value="XII TBSM 3">XII TBSM 3</option>
                     </select>
                 </div>
                 <div class="bg-red-50 p-4 rounded-lg border border-red-200 mt-4">
@@ -164,18 +191,19 @@
                 <!-- BAGIAN C -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">C. Pasangkan Jawaban (Drag & Drop)</h3>
-                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-hand-pointer text-blue-500 mr-1"></i> Tekan dan tahan (long-press) kotak biru, lalu seret ke area putus-putus.</p>
+                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-hand-pointer text-blue-500 mr-1"></i> Sentuh dan geser kotak biru ke area putus-putus.</p>
                     <div id="sec-c" class="space-y-10">
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Pasangkan istilah dalam alur kerja bengkel berikut dengan fungsinya yang tepat!</p>
                             <div class="flex flex-col md:flex-row gap-6">
                                 <div class="w-full md:w-1/3 bg-blue-50 p-4 rounded-xl border border-blue-200">
+                                    <!-- Menghapus atribut draggable="true" bawaan HTML5 -->
                                     <div class="space-y-2 min-h-[50px]" id="source-q5">
-                                        <div draggable="true" id="q5_A" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Shadow Board</div>
-                                        <div draggable="true" id="q5_B" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Check Sheet (PKB)</div>
-                                        <div draggable="true" id="q5_C" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">SOP</div>
-                                        <div draggable="true" id="q5_D" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Work Flow</div>
-                                        <div draggable="true" id="q5_E" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Special Service Tool (SST)</div>
+                                        <div id="q5_A" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Shadow Board</div>
+                                        <div id="q5_B" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Check Sheet (PKB)</div>
+                                        <div id="q5_C" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">SOP</div>
+                                        <div id="q5_D" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Work Flow</div>
+                                        <div id="q5_E" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Special Service Tool (SST)</div>
                                     </div>
                                 </div>
                                 <div class="w-full md:w-2/3 space-y-3">
@@ -193,11 +221,11 @@
                             <div class="flex flex-col md:flex-row gap-6">
                                 <div class="w-full md:w-1/3 bg-green-50 p-4 rounded-xl border border-green-200">
                                     <div class="space-y-2 min-h-[50px]" id="source-q6">
-                                        <div draggable="true" id="q6_A" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Jangka Sorong</div>
-                                        <div draggable="true" id="q6_B" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Diagnostic Scanner</div>
-                                        <div draggable="true" id="q6_C" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Fuel Pressure Gauge</div>
-                                        <div draggable="true" id="q6_D" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Tracker Bearing</div>
-                                        <div draggable="true" id="q6_E" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Tracker CVT</div>
+                                        <div id="q6_A" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Jangka Sorong</div>
+                                        <div id="q6_B" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Diagnostic Scanner</div>
+                                        <div id="q6_C" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Fuel Pressure Gauge</div>
+                                        <div id="q6_D" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Tracker Bearing</div>
+                                        <div id="q6_E" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Tracker CVT</div>
                                     </div>
                                 </div>
                                 <div class="w-full md:w-2/3 space-y-3">
@@ -215,25 +243,27 @@
                 <!-- BAGIAN D -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">D. Urutkan Jawaban</h3>
+                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-arrows-alt-v text-blue-500 mr-1"></i> Sentuh dan tahan <b>ikon garis tiga (disebelah kiri)</b> lalu geser ke atas/bawah.</p>
                     <div id="sec-d" class="space-y-8">
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Urutkan langkah-langkah alur kerja "Penerimaan Jasa Servis" yang paling efisien!</p>
                             <ul class="sortable-list space-y-2 bg-gray-50 p-4 rounded-xl border" id="sort-q7">
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="A"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Mekanik memasukkan motor ke pit/bikelift dan mulai mengerjakan sesuai form.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="B"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Pelanggan disambut oleh Service Advisor (SA).</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="C"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Kasir memanggil pelanggan untuk pembayaran dan penyerahan kunci motor.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="D"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Motor selesai, dicek oleh Kepala Mekanik (Final Check) dan dicuci.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="E"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">SA mencatat keluhan di formulir PKB dan mengestimasi biaya/waktu.</span></li>
+                                <!-- Hapus draggable="true" dan Tambah drag-handle di ikon -->
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="A"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Mekanik memasukkan motor ke pit/bikelift dan mulai mengerjakan sesuai form.</span></li>
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="B"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Pelanggan disambut oleh Service Advisor (SA).</span></li>
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="C"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Kasir memanggil pelanggan untuk pembayaran dan penyerahan kunci motor.</span></li>
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="D"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Motor selesai, dicek oleh Kepala Mekanik (Final Check) dan dicuci.</span></li>
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="E"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">SA mencatat keluhan di formulir PKB dan mengestimasi biaya/waktu.</span></li>
                             </ul>
                         </div>
                         <div class="q-block">
                             <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Urutkan metode kerja standar yang efisien dan aman saat kamu melakukan servis CVT motor matic!</p>
                             <ul class="sortable-list space-y-2 bg-gray-50 p-4 rounded-xl border" id="sort-q8">
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="A"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Membersihkan area dalam CVT dengan udara bertekanan dan cairan pembersih.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="B"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Membuka cover (tutup) blok CVT menggunakan kunci T-8.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="C"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Memasang kembali komponen, mengencangkan dengan torsi, dan menutup cover.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="D"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Melepas puli depan dan puli belakang menggunakan tracker khusus CVT.</span></li>
-                                <li draggable="true" class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="E"><i class="fas fa-grip-lines text-gray-400 text-lg"></i><span class="text-sm">Mengecek kondisi v-belt, roller, dan kampas ganda.</span></li>
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="A"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Membersihkan area dalam CVT dengan udara bertekanan dan cairan pembersih.</span></li>
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="B"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Membuka cover (tutup) blok CVT menggunakan kunci T-8.</span></li>
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="C"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Memasang kembali komponen, mengencangkan dengan torsi, dan menutup cover.</span></li>
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="D"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Melepas puli depan dan puli belakang menggunakan tracker khusus CVT.</span></li>
+                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="E"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Mengecek kondisi v-belt, roller, dan kampas ganda.</span></li>
                             </ul>
                         </div>
                     </div>
@@ -297,8 +327,8 @@
     </div>
 
     <script>
-        // MASUKKAN URL GOOGLE SCRIPT ANDA DI BAWAH INI (PASTIKAN MENGGUNAKAN VERSI TERBARU)
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4RogSTl9erAVPZWy6t7QombjPDvWOg2s9t1i2_1dfxG41cTLbhDO96fOnZpa8Y0IVtw/exec'; 
+        // MASUKKAN URL GOOGLE SCRIPT ANDA DI SINI
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziO9w_T6OL_lq42dYabFfeu1sKgcNYdZWdhOUncneVp855--n4_fSFQwXKHXVQp4TaSA/exec'; 
         
         let studentName = "", studentClass = "";
         let cheatCount = 0, examActive = false;
@@ -308,7 +338,7 @@
         
         let isGracePeriod = false; 
         let ignoredFirstStrike = false; 
-        let isWarningOpen = false; // Mencegah popup numpuk
+        let isWarningOpen = false; 
 
         window.onload = function() {
             if (localStorage.getItem('ujian_bengkel_selesai') === 'true') {
@@ -342,8 +372,6 @@
             navigator.mediaDevices.getUserMedia({ video: true, audio: false })
             .then(function(stream) {
                 video.srcObject = stream;
-                
-                // MENGAKALI BROWSER: Pastikan video benar-benar di-play agar tidak freeze layarnya
                 video.play().catch(e => console.log(e));
                 
                 Swal.close(); 
@@ -360,15 +388,13 @@
                 
                 examActive = true; 
                 
-                // MASA TENGGANG DIPERPANJANG KE 10 DETIK & PAKSA FOKUS KE LAYAR
                 isGracePeriod = true;
-                window.focus(); // Menarik fokus sistem operasi ke browser
+                window.focus(); 
                 setTimeout(() => { isGracePeriod = false; }, 10000);
 
                 startTimer(); 
-                initDragAndDrop();
+                initSortableJS(); // Inisialisasi Fitur Geser yang Baru
                 
-                // Kirim tes pertama setelah 5 detik
                 setTimeout(captureCCTV, 5000); 
                 cctvInterval = setInterval(captureCCTV, 60000); 
             })
@@ -388,7 +414,6 @@
             const video = document.getElementById('cctv-video');
             const canvas = document.getElementById('cctv-canvas');
             
-            // Resolusi kanvas
             canvas.width = 320;
             canvas.height = 240;
             const context = canvas.getContext('2d');
@@ -453,7 +478,6 @@
         }
 
         function handleCheatDetected(reason) {
-            // Cegah error ganda/numpuk
             if (!examActive || isGracePeriod || isWarningOpen) return; 
             
             if (!ignoredFirstStrike) {
@@ -463,8 +487,6 @@
 
             cheatCount++; 
             document.getElementById('cheat-counter').textContent = cheatCount;
-            
-            // Hapus blur agar popup terbaca jelas & tombol bisa diklik
             document.getElementById('exam-screen').classList.remove('blur-screen');
 
             if (cheatCount >= 3) {
@@ -527,44 +549,44 @@
             }
         });
 
-        function initDragAndDrop() {
-            document.querySelectorAll('.draggable-item').forEach(d => {
-                d.addEventListener('dragstart', (e) => { d.classList.add('dragging'); e.dataTransfer.setData('text', d.id); });
-                d.addEventListener('dragend', () => d.classList.remove('dragging'));
+        /* =========================================
+           FITUR SORTABLE JS BARU (100% AMAN UNTUK SEMUA ANDROID)
+        ========================================= */
+        function initSortableJS() {
+            // Soal Drag & Drop Kelompok 5
+            new Sortable(document.getElementById('source-q5'), {
+                group: { name: 'q5', put: true },
+                animation: 150, sort: false
             });
-
-            document.querySelectorAll('.dropzone').forEach(z => {
-                z.addEventListener('dragover', (e) => { e.preventDefault(); z.classList.add('drag-over'); });
-                z.addEventListener('dragleave', () => z.classList.remove('drag-over'));
-                z.addEventListener('drop', (e) => {
-                    e.preventDefault(); z.classList.remove('drag-over');
-                    const id = e.dataTransfer.getData('text');
-                    if (!id) return;
-                    const dElement = document.getElementById(id);
-                    if (dElement && dElement.dataset.group === z.dataset.group) {
-                        if (z.children.length > 0) document.getElementById(`source-${z.dataset.group}`).appendChild(z.children[0]);
-                        z.appendChild(dElement);
-                    }
+            document.querySelectorAll('.dropzone[data-group="q5"]').forEach(zone => {
+                new Sortable(zone, {
+                    group: { name: 'q5', put: function (to) { return to.el.children.length < 1; } },
+                    animation: 150
                 });
             });
 
-            const sortables = document.querySelectorAll('.sortable-list');
-            sortables.forEach(list => {
-                list.addEventListener('dragstart', (e) => { if(e.target.classList.contains('sortable-item')) e.target.classList.add('dragging'); });
-                list.addEventListener('dragend', (e) => { if(e.target.classList.contains('sortable-item')) e.target.classList.remove('dragging'); });
-                list.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    const afterElement = [...list.querySelectorAll('.sortable-item:not(.dragging)')].reduce((closest, child) => {
-                        const box = child.getBoundingClientRect(); 
-                        const offset = e.clientY - box.top - box.height / 2;
-                        return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest;
-                    }, { offset: Number.NEGATIVE_INFINITY }).element;
-                    
-                    const draggable = document.querySelector('.dragging');
-                    if (draggable && draggable.nextElementSibling !== afterElement) { 
-                        afterElement == null ? list.appendChild(draggable) : list.insertBefore(draggable, afterElement); 
-                    }
+            // Soal Drag & Drop Kelompok 6
+            new Sortable(document.getElementById('source-q6'), {
+                group: { name: 'q6', put: true },
+                animation: 150, sort: false
+            });
+            document.querySelectorAll('.dropzone[data-group="q6"]').forEach(zone => {
+                new Sortable(zone, {
+                    group: { name: 'q6', put: function (to) { return to.el.children.length < 1; } },
+                    animation: 150
                 });
+            });
+
+            // Soal Urutkan Q7 & Q8 (HANYA BISA DITARIK DARI IKON)
+            new Sortable(document.getElementById('sort-q7'), {
+                animation: 150,
+                handle: '.drag-handle', // Elemen yang bisa diklik untuk ditarik
+                ghostClass: 'sortable-ghost'
+            });
+            new Sortable(document.getElementById('sort-q8'), {
+                animation: 150,
+                handle: '.drag-handle',
+                ghostClass: 'sortable-ghost'
             });
         }
 
@@ -588,7 +610,6 @@
 
             document.getElementById('exam-screen').classList.remove('blur-screen');
 
-            // PERBAIKAN: Popup diskualifikasi wajib diklik agar siswa sadar mereka dikunci
             Swal.fire({ 
                 title: 'ANDA DIDISKUALIFIKASI!', 
                 text: reason, 
@@ -613,6 +634,8 @@
             btnSubmit.disabled = true; btnSubmit.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Memproses...`;
 
             const form = document.getElementById('exam-form'); const formData = new FormData(form);
+            
+            // Format Pengambilan Jawaban Drag & Drop Tetap Sama
             const getDropAnswers = (group) => {
                 let ans = [];
                 document.querySelectorAll(`[data-group="${group}"].dropzone`).forEach(z => {
