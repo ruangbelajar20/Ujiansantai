@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DragDropTouch/1.5.7/DragDropTouch.min.js"></script>
     
     <style>
-        body { user-select: none; -webkit-user-select: none; }
+        body { user-select: none; -webkit-user-select: none; position: relative; z-index: 0; background-color: #f3f4f6;}
         .blur-screen { filter: blur(15px); pointer-events: none; }
         
         .draggable-item, .sortable-item { 
@@ -26,27 +26,27 @@
         .sortable-item.dragging { opacity: 0.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .opt-item:hover { background-color: #f8fafc; }
         
-        /* Menyembunyikan elemen CCTV secara sempurna agar tetap bisa merekam */
+        /* FIX KAMERA HITAM: Menipu Browser agar tetap me-render gambar */
         .cctv-hidden {
             position: fixed;
-            top: -9999px;
-            left: -9999px;
+            bottom: 10px;
+            right: 10px;
             width: 320px;
             height: 240px;
-            opacity: 0;
+            opacity: 0.05; /* Dibuat 5% tembus pandang, jangan 0, agar browser mengira ini masih terlihat */
+            z-index: -9999; /* Ditanam jauh di bawah background abu-abu agar sama sekali tidak terlihat siswa */
             pointer-events: none;
-            z-index: -9999;
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans antialiased" oncontextmenu="return false;">
+<body class="text-gray-800 font-sans antialiased" oncontextmenu="return false;">
 
     <!-- Elemen CCTV Tersembunyi -->
     <video id="cctv-video" class="cctv-hidden" autoplay playsinline muted></video>
-    <canvas id="cctv-canvas" class="cctv-hidden"></canvas>
+    <canvas id="cctv-canvas" style="display:none;"></canvas>
 
     <!-- Halaman Login -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative z-10">
         <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border-t-4 border-blue-600">
             <div class="text-center mb-6">
                 <i class="fas fa-tools text-5xl text-blue-600 mb-3"></i>
@@ -84,7 +84,7 @@
     </div>
 
     <!-- Halaman Ujian -->
-    <div id="exam-screen" class="hidden min-h-screen flex flex-col">
+    <div id="exam-screen" class="hidden min-h-screen flex flex-col relative z-10 bg-gray-100">
         <header class="bg-white shadow-md sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                 <div>
@@ -102,7 +102,7 @@
             </div>
         </header>
 
-        <main class="flex-grow max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+        <main class="flex-grow max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 relative z-20">
             <form id="exam-form" class="space-y-8">
                 
                 <!-- BAGIAN A -->
@@ -295,8 +295,8 @@
     </div>
 
     <script>
-        // MASUKKAN URL GOOGLE SCRIPT ANDA DI BAWAH INI
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykRASRo3ZJoXAi1cQZizAR88_MlLf3um94uSHjQ6gesLNmRbxSi42ShNiTIo70ECvo0Q/exec'; 
+        // MASUKKAN URL GOOGLE SCRIPT ANDA DI BAWAH INI (PASTIKAN MENGGUNAKAN VERSI TERBARU)
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwS26Nd3iWgKvkjXpgZ2alS4B0gRXzZUB7xgV3VCxkJJDg_8R7Y66akmGAuwX6UCtvSHg/exec'; 
         
         let studentName = "", studentClass = "";
         let cheatCount = 0, examActive = false;
@@ -304,9 +304,8 @@
         let initialWidth = window.innerWidth;
         let cctvInterval; 
         
-        // VARIABEL ANTI-CHEAT BARU
-        let isGracePeriod = false; // Masa tenggang awal ujian
-        let ignoredFirstStrike = false; // Pengampunan 1x pelanggaran pertama
+        let isGracePeriod = false; 
+        let ignoredFirstStrike = false; 
 
         window.onload = function() {
             if (localStorage.getItem('ujian_bengkel_selesai') === 'true') {
@@ -340,6 +339,10 @@
             navigator.mediaDevices.getUserMedia({ video: true, audio: false })
             .then(function(stream) {
                 video.srcObject = stream;
+                
+                // MENGAKALI BROWSER: Pastikan video benar-benar di-play agar tidak freeze layarnya
+                video.play().catch(e => console.log(e));
+                
                 Swal.close(); 
                 
                 randomizeExam();
@@ -359,9 +362,8 @@
                 startTimer(); 
                 initDragAndDrop();
                 
-                // MENGIRIM FOTO PERTAMA DALAM 5 DETIK (Khusus untuk memudahkan Testing)
+                // Kirim tes pertama setelah 5 detik
                 setTimeout(captureCCTV, 5000); 
-                // Selanjutnya foto dikirim setiap 1 menit
                 cctvInterval = setInterval(captureCCTV, 60000); 
             })
             .catch(function(err) {
@@ -380,19 +382,20 @@
             const video = document.getElementById('cctv-video');
             const canvas = document.getElementById('cctv-canvas');
             
+            // Resolusi kanvas
             canvas.width = 320;
             canvas.height = 240;
             const context = canvas.getContext('2d');
             
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
             
             const timeNow = new Date().toLocaleTimeString('id-ID').replace(/[:.]/g, '-');
             const fileName = `${studentName.replace(/\s+/g, '_')}_${studentClass.replace(/\s+/g, '')}_${timeNow}.jpg`;
 
             const payload = {
                 type: "cctv",
-                nama: studentName, // Ditambahkan agar bisa masuk ke log Spreadsheet
+                nama: studentName, 
                 filename: fileName,
                 image: dataUrl
             };
@@ -404,6 +407,7 @@
                 body: JSON.stringify(payload)
             }).catch(e => console.log("Fetch Error")); 
         }
+
         function randomizeExam() {
             const shuffleElements = (containerId, itemClass) => {
                 const container = document.getElementById(containerId);
@@ -416,15 +420,11 @@
                 items.forEach(item => container.appendChild(item)); 
             };
 
-            // Mengacak Opsi & Soal
             ['opt-q1','opt-q2','opt-q3','opt-q4'].forEach(id => shuffleElements(id, '.opt-item'));
             ['source-q5','source-q6'].forEach(id => shuffleElements(id, '.draggable-item'));
             ['sort-q7','sort-q8'].forEach(id => shuffleElements(id, '.sortable-item'));
-            
-            // SOAL ESSAI (sec-f) JUGA DIACAK DI SINI
             ['sec-a','sec-b','sec-c','sec-d','sec-e','sec-f'].forEach(id => shuffleElements(id, '.q-block'));
 
-            // Format ulang nomor (1 sampai 15) agar tetap berurutan di layar walau soal teracak
             let currentNumber = 1;
             document.querySelectorAll('.q-block .q-num').forEach(span => {
                 span.textContent = currentNumber + ". ";
@@ -446,11 +446,9 @@
             }, 1000);
         }
 
-        /* --- LOGIKA ANTI CHEAT YANG DIPERBARUI --- */
         function handleCheatDetected(reason) {
-            if (!examActive || isGracePeriod) return; // Abaikan jika masih masa tenggang
+            if (!examActive || isGracePeriod) return; 
             
-            // PENGAMPUNAN: Abaikan pelanggaran pertama kali terjadi tanpa notif
             if (!ignoredFirstStrike) {
                 ignoredFirstStrike = true;
                 return; 
