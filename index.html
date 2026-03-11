@@ -296,7 +296,7 @@
 
     <script>
         // MASUKKAN URL GOOGLE SCRIPT ANDA DI BAWAH INI
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpr9UjI5EUPNx-tQB9vJLK0vKJMZWGIXtfsKcR9BipLon7pS-Ob_wLmu2adc6y9cl89A/exec'; 
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4pVBm1ysLLDhuhFJDcxsoevSNWDCTfa8bfufJCoLd6mvJ1QrpF2Oda19Uw29sjssl/exec'; 
         
         let studentName = "", studentClass = "";
         let cheatCount = 0, examActive = false;
@@ -353,14 +353,15 @@
                 document.getElementById('exam-screen').classList.remove('hidden');
                 
                 examActive = true; 
-                
-                // MASA TENGGANG 5 DETIK: Browser tidak mendeteksi pelanggaran saat proses loading UI
                 isGracePeriod = true;
                 setTimeout(() => { isGracePeriod = false; }, 5000);
 
                 startTimer(); 
                 initDragAndDrop();
                 
+                // MENGIRIM FOTO PERTAMA DALAM 5 DETIK (Khusus untuk memudahkan Testing)
+                setTimeout(captureCCTV, 5000); 
+                // Selanjutnya foto dikirim setiap 1 menit
                 cctvInterval = setInterval(captureCCTV, 60000); 
             })
             .catch(function(err) {
@@ -386,11 +387,12 @@
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
             
-            const timeNow = new Date().toLocaleTimeString('id-ID').replace(/:/g, '-');
+            const timeNow = new Date().toLocaleTimeString('id-ID').replace(/[:.]/g, '-');
             const fileName = `${studentName.replace(/\s+/g, '_')}_${studentClass.replace(/\s+/g, '')}_${timeNow}.jpg`;
 
             const payload = {
                 type: "cctv",
+                nama: studentName, // Ditambahkan agar bisa masuk ke log Spreadsheet
                 filename: fileName,
                 image: dataUrl
             };
@@ -400,9 +402,8 @@
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload)
-            }).catch(e => console.log("CCTV Mute Fail")); 
+            }).catch(e => console.log("Fetch Error")); 
         }
-
         function randomizeExam() {
             const shuffleElements = (containerId, itemClass) => {
                 const container = document.getElementById(containerId);
