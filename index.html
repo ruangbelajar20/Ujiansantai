@@ -8,16 +8,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Polyfill Layar Sentuh -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DragDropTouch/1.5.7/DragDropTouch.min.js"></script>
     
     <style>
         body { user-select: none; -webkit-user-select: none; }
         .blur-screen { filter: blur(15px); pointer-events: none; }
         
-        /* OPTIMASI CSS ANTI-LAG & SCROLL MOBILE */
         .draggable-item, .sortable-item { 
             cursor: grab; 
-            /* touch-action dihapus agar layar HP tetap bisa di-scroll normal */
             will-change: transform; 
         }
         .draggable-item:active, .sortable-item:active { cursor: grabbing; }
@@ -26,10 +25,25 @@
         .sortable-item { transition: box-shadow 0.2s ease; }
         .sortable-item.dragging { opacity: 0.5; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .opt-item:hover { background-color: #f8fafc; }
+        
+        /* Menyembunyikan elemen CCTV secara sempurna */
+        .cctv-hidden {
+            position: absolute;
+            width: 0px;
+            height: 0px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: -999;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans antialiased" oncontextmenu="return false;">
 
+    <!-- Elemen CCTV Tersembunyi -->
+    <video id="cctv-video" class="cctv-hidden" autoplay playsinline muted></video>
+    <canvas id="cctv-canvas" class="cctv-hidden"></canvas>
+
+    <!-- Halaman Login -->
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border-t-4 border-blue-600">
             <div class="text-center mb-6">
@@ -49,13 +63,13 @@
                         <option value="">Pilih Kelas...</option>
                         <option value="XI TBSM 1">XI TBSM 1</option>
                         <option value="XI TBSM 2">XI TBSM 2</option>
-                        
+
                     </select>
                 </div>
                 <div class="bg-red-50 p-4 rounded-lg border border-red-200 mt-4">
                     <h3 class="text-sm font-bold text-red-800 flex items-center"><i class="fas fa-shield-alt mr-2"></i> PERHATIAN</h3>
                     <ul class="text-xs text-red-700 mt-2 list-disc pl-4 space-y-1">
-                        <li>Soal dan opsi jawaban <b>diacak otomatis</b>.</li>
+                        <li><b>Sistem Proctoring Aktif:</b> Anda Wajib Mengizinkan Akses Kamera.</li>
                         <li>Dilarang menggunakan layar terbagi (Split Screen).</li>
                         <li>Dilarang membuka aplikasi lain (Floating Apps).</li>
                         <li>Ujian HANYA BISA DIKERJAKAN 1 KALI.</li>
@@ -68,6 +82,7 @@
         </div>
     </div>
 
+    <!-- Halaman Ujian -->
     <div id="exam-screen" class="hidden min-h-screen flex flex-col">
         <header class="bg-white shadow-md sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
@@ -89,6 +104,7 @@
         <main class="flex-grow max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8">
             <form id="exam-form" class="space-y-8">
                 
+                <!-- BAGIAN A -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">A. Pilihan Ganda</h3>
                     <div id="sec-a" class="space-y-8">
@@ -115,6 +131,7 @@
                     </div>
                 </div>
 
+                <!-- BAGIAN B -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">B. Pilihan Ganda Kompleks (Pilih 2 atau lebih)</h3>
                     <div id="sec-b" class="space-y-8">
@@ -141,6 +158,7 @@
                     </div>
                 </div>
 
+                <!-- BAGIAN C -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">C. Pasangkan Jawaban (Drag & Drop)</h3>
                     <p class="text-sm text-gray-500 mb-4"><i class="fas fa-hand-pointer text-blue-500 mr-1"></i> Tekan dan tahan (long-press) kotak biru, lalu seret ke area putus-putus.</p>
@@ -191,6 +209,7 @@
                     </div>
                 </div>
 
+                <!-- BAGIAN D -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">D. Urutkan Jawaban</h3>
                     <div id="sec-d" class="space-y-8">
@@ -217,6 +236,7 @@
                     </div>
                 </div>
 
+                <!-- BAGIAN E -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">E. Benar atau Salah</h3>
                     <div id="sec-e" class="space-y-6">
@@ -237,20 +257,21 @@
                     </div>
                 </div>
 
+                <!-- BAGIAN F -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">F. Uraian & Studi Kasus</h3>
                     <div id="sec-f" class="space-y-6">
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Menurut pemahamanmu, mengapa sebuah bisnis jasa servis seperti Bengkel Kita Bersama harus merencanakan penempatan atau tata letak (layout) peralatannya, seperti letak kompresor, rak oli, dan area cuci motor? Jelaskan dengan bahasamu sendiri!</label>
-                            <textarea name="q11" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
+                            <textarea name="q11" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
                         </div>
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Bengkel Kita Bersama akan mengadakan promo "Ganti Oli Mesin & Cek Tekanan Ban Super Cepat: Maksimal 10 Menit!". Sebagai mekanik andalan, coba rencanakan kebutuhan peralatan apa saja yang harus sudah siap di dekatmu, dan bagaimana alur kerjamu agar target 10 menit itu tercapai tanpa mengorbankan kualitas!</label>
-                            <textarea name="q12" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
+                            <textarea name="q12" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
                         </div>
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Kamu menyadari bahwa waktu tunggu servis pelanggan jadi sangat lama hanya karena 3 orang mekanik sering berebut dan menunggu untuk menggunakan 1 buah selang angin Air Compressor. Rencanakan sebuah metode alur kerja atau solusi tata letak agar masalah ini teratasi tanpa bengkel harus membeli mesin kompresor baru!</label>
-                            <textarea name="q13" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
+                            <textarea name="q13" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
                         </div>
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Alat yang hilang atau rusak bikin proses produksi terhambat. Buatlah sebuah prosedur (Standard Operating Procedure / SOP) sederhana berisi 5 langkah berurutan yang harus dilakukan mekanik untuk merawat alat kerjanya setiap kali jam bengkel tutup!</label>
@@ -258,7 +279,7 @@
                         </div>
                         <div class="q-block">
                             <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> <b>STUDI KASUS:</b> Bayangkan kamu sedang merancang sistem kerja untuk Bengkel Kita Bersama yang berlokasi di Jl. Pondok Lele Kp. Bakan Sereh Desa Dawuan Barat. Sebelum buka, kamu mengamati dua bengkel kompetitor di sekitar sana:<br><br>- <b>Bengkel A:</b> Punya alat yang sangat lengkap dan mahal, tapi mekaniknya sering mondar-mandir mencari kunci yang tercecer, sehingga satu servis ringan butuh waktu 2 jam. Sering terjadi baut yang tertukar.<br>- <b>Bengkel B:</b> Alatnya standar biasa, tapi mekaniknya punya nampan khusus per jenis servis, alat selalu dikembalikan ke tempatnya, sehingga servis ringan cuma butuh 45 menit dengan hasil memuaskan.<br><br>Analisislah apa kelemahan fatal pada sistem manajemen alat dan alur kerja di Bengkel A! Lalu, berikan minimal 3 saran evaluasi kritis agar Bengkel Kita Bersama nantinya bisa beroperasi seefisien Bengkel B!</label>
-                            <textarea name="q15" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik analisis dan saran Anda di sini..."></textarea>
+                            <textarea name="q15" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white"></textarea>
                         </div>
                     </div>
                 </div>
@@ -280,6 +301,7 @@
         let cheatCount = 0, examActive = false;
         let timeLeft = 3600, timerInterval;
         let initialWidth = window.innerWidth;
+        let cctvInterval; // Interval CCTV
 
         window.onload = function() {
             if (localStorage.getItem('ujian_bengkel_selesai') === 'true') {
@@ -300,20 +322,91 @@
                 return;
             }
 
-            randomizeExam();
-            document.getElementById('display-name').textContent = studentName;
-            document.getElementById('display-class').textContent = studentClass;
-            
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => {}); }
+            // PROSES AWAL CCTV SEBELUM MASUK UJIAN
+            Swal.fire({
+                title: 'Mohon Izinkan Kamera',
+                text: 'Sistem Proctoring membutuhkan akses kamera Anda untuk memulai ujian.',
+                icon: 'info',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
 
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('exam-screen').classList.remove('hidden');
+            const video = document.getElementById('cctv-video');
             
-            examActive = true; 
-            startTimer(); 
-            initDragAndDrop();
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(function(stream) {
+                // Kamera Diizinkan
+                video.srcObject = stream;
+                
+                Swal.close(); // Tutup loading
+                
+                // Lanjut persiapan ujian
+                randomizeExam();
+                document.getElementById('display-name').textContent = studentName;
+                document.getElementById('display-class').textContent = studentClass;
+                
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => {}); }
+
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('exam-screen').classList.remove('hidden');
+                
+                examActive = true; 
+                startTimer(); 
+                initDragAndDrop();
+                
+                // Mulai ambil foto secara otomatis setiap 1 Menit (60000 ms)
+                cctvInterval = setInterval(captureCCTV, 60000);
+            })
+            .catch(function(err) {
+                // Kamera Ditolak
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Akses Ditolak',
+                    text: 'Anda tidak dapat mengikuti ujian tanpa mengizinkan akses kamera.',
+                    confirmButtonText: 'Coba Lagi'
+                });
+            });
         }
+
+        /* --- FUNGSI MENGAMBIL FOTO CCTV SECARA DIAM-DIAM --- */
+        function captureCCTV() {
+            if (!examActive) return;
+            
+            const video = document.getElementById('cctv-video');
+            const canvas = document.getElementById('cctv-canvas');
+            
+            // Set ukuran kanvas kecil saja agar tidak berat (Resolusi 320x240)
+            canvas.width = 320;
+            canvas.height = 240;
+            const context = canvas.getContext('2d');
+            
+            // Gambar frame video ke dalam kanvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Ubah kanvas menjadi Base64 Image (Kualitas 50% / 0.5)
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+            
+            // Format Nama File: Nama_Kelas_Waktu.jpg
+            const timeNow = new Date().toLocaleTimeString('id-ID').replace(/:/g, '-');
+            const fileName = `${studentName.replace(/\s+/g, '_')}_${studentClass.replace(/\s+/g, '')}_${timeNow}.jpg`;
+
+            const payload = {
+                type: "cctv",
+                filename: fileName,
+                image: dataUrl,
+                mimeType: "image/jpeg"
+            };
+
+            // Kirim diam-diam ke Google Apps Script
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(e => console.log("CCTV Fail")); // Gagal biarkan saja agar siswa tidak panik
+        }
+
 
         function randomizeExam() {
             const shuffleElements = (containerId, itemClass) => {
@@ -454,13 +547,30 @@
         }
 
         function autoSubmit(reason) {
-            examActive = false; clearInterval(timerInterval);
+            examActive = false; 
+            clearInterval(timerInterval);
+            clearInterval(cctvInterval); // Matikan CCTV
+            
+            const video = document.getElementById('cctv-video');
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop()); // Matikan lampu kamera
+            }
+
             Swal.fire({ title: 'Ujian Berakhir!', text: reason, icon: 'warning', allowOutsideClick: false, showConfirmButton: false, timer: 4000 })
             .then(() => processSubmission());
         }
 
         function processSubmission() {
-            examActive = false; clearInterval(timerInterval); document.body.classList.remove('blur-screen');
+            examActive = false; 
+            clearInterval(timerInterval); 
+            clearInterval(cctvInterval); // Matikan CCTV saat mengirim
+            
+            const video = document.getElementById('cctv-video');
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop()); // Matikan lampu kamera
+            }
+
+            document.body.classList.remove('blur-screen');
             
             const btnSubmit = document.getElementById('btn-submit');
             btnSubmit.disabled = true; btnSubmit.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Memproses...`;
@@ -475,7 +585,9 @@
             };
             const getSortAnswers = (id) => Array.from(document.getElementById(id).children).map(li => li.dataset.id).join(',');
 
+            // Tambahkan "type: ujian" agar server tahu ini form jawaban, bukan form foto cctv
             const dataToSubmit = {
+                type: "ujian", 
                 timestamp: new Date().toLocaleString('id-ID'),
                 nama: studentName, kelas: studentClass, pelanggaran: cheatCount,
                 q1: formData.get('q1') || '', q2: formData.get('q2') || '',
