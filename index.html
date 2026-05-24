@@ -2,321 +2,618 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ujian Akhir: Perencanaan Manajemen Bengkel & Servis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Simulasi PAT Project IPS: Ekonomi</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- FIX BUG OPPO/ANDROID: Mengganti Polyfill lama dengan SortableJS untuk sentuhan yang 100% mulus -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     
     <style>
-        body { user-select: none; -webkit-user-select: none; position: relative; z-index: 0; background-color: #f3f4f6;}
+        body { user-select: none; -webkit-user-select: none; position: relative; z-index: 0; background-color: #0f172a;}
         
         .blur-screen { filter: blur(15px); pointer-events: none; user-select: none; }
         
-        /* CSS Baru untuk SortableJS */
-        .draggable-item { 
-            cursor: grab; 
-            touch-action: none; /* Wajib agar kotak biru tidak menscroll layar saat ditarik */
+        /* TEMA MALAM & EKONOMI: Background gelap dengan pola grid digital/statistik */
+        .bg-night-economy {
+            background-color: #0f172a;
+            background-image: 
+                linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
         }
+
+        /* CSS SortableJS & Drag-Drop */
+        .draggable-item { cursor: grab; }
         .draggable-item:active { cursor: grabbing; }
         
         .dropzone { 
             min-height: 50px; 
-            border: 2px dashed #cbd5e1; 
-            transition: background-color 0.2s; 
+            border: 2px dashed #475569; 
+            transition: all 0.2s ease; 
         }
-        
-        .sortable-item { 
-            transition: box-shadow 0.2s ease; 
-        }
-        
-        /* Area khusus yang disentuh untuk menggeser (Ikon Garis 3) */
-        .drag-handle {
-            cursor: grab;
-            padding: 10px;
-            margin-left: -10px;
-            touch-action: none; /* Mencegah scroll saat menyentuh ikon ini */
-        }
+        .dropzone.highlight { background-color: #1e293b; border-color: #10b981; }
+        .sortable-item { transition: box-shadow 0.2s ease; }
+        .drag-handle { cursor: grab; padding: 10px; margin-left: -10px; }
         .drag-handle:active { cursor: grabbing; }
+        .sortable-ghost { opacity: 0.4; background-color: #064e3b; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); }
         
-        /* Efek bayangan saat item sedang diseret */
-        .sortable-ghost { 
-            opacity: 0.4; 
-            background-color: #e0f2fe; 
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
-        }
-        
-        .opt-item:hover { background-color: #f8fafc; }
+        /* Tema Hover Opsi Malam */
+        .opt-item:hover { background-color: #1e293b; border-color: #10b981; }
         
         /* Kamera CCTV Tersembunyi */
         .cctv-hidden {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 320px;
-            height: 240px;
-            opacity: 0.05; 
-            z-index: -9999; 
-            pointer-events: none;
+            position: fixed; bottom: 10px; right: 10px;
+            width: 320px; height: 240px;
+            opacity: 0.05; z-index: -9999; pointer-events: none;
         }
+
+        /* Scrollbar kustom untuk tema gelap */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
-<body class="text-gray-800 font-sans antialiased" oncontextmenu="return false;">
+<body class="text-slate-200 font-sans antialiased" oncontextmenu="return false;">
 
-    <!-- Elemen CCTV Tersembunyi -->
+    <audio id="bgm-audio" loop>
+        <source src="https://assets.mixkit.co/music/preview/mixkit-relaxing-nature-42.mp3" type="audio/mpeg">
+    </audio>
+
     <video id="cctv-video" class="cctv-hidden" autoplay playsinline muted></video>
     <canvas id="cctv-canvas" style="display:none;"></canvas>
 
-    <!-- Halaman Login -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative z-10">
-        <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border-t-4 border-blue-600">
-            <div class="text-center mb-6">
-                <i class="fas fa-tools text-5xl text-blue-600 mb-3"></i>
-                <h1 class="text-2xl font-bold text-gray-900">Sistem Ujian CBT</h1>
-                <p class="text-gray-500 text-sm">Manajemen Bengkel & Praktik Servis</p>
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative z-10 bg-night-economy">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-600 via-teal-500 to-blue-600"></div>
+
+        <div class="bg-slate-800 p-8 rounded-xl shadow-2xl max-w-md w-full border border-slate-700 relative overflow-hidden">
+            <div class="absolute -bottom-8 -right-8 text-slate-700 opacity-30 z-0">
+                <i class="fas fa-chart-line text-9xl"></i>
+            </div>
+
+            <div class="text-center mb-6 relative z-10">
+                <div class="inline-block p-4 bg-emerald-900/30 rounded-full border border-emerald-800/50 mb-3 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                    <i class="fas fa-coins text-5xl text-emerald-400"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-white tracking-wide">Arsip Evaluasi</h1>
+                <h2 class="text-lg font-bold text-emerald-400 mt-1 uppercase tracking-widest">Project IPS</h2>
+                <p class="text-slate-400 text-sm mt-2 border-t border-slate-700 pt-2">Materi: Kebutuhan, Prinsip & Kegiatan Ekonomi<br>Tingkat SMK / Vokasi</p>
             </div>
             
-            <div class="space-y-4">
+            <div class="space-y-4 relative z-10">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                    <input type="text" id="student-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Masukkan nama lengkap" required>
+                    <label class="block text-sm font-bold text-slate-300 mb-1">Nama Peserta</label>
+                    <input type="text" id="student-name" class="w-full px-4 py-3 border border-slate-600 bg-slate-700 text-white rounded-lg focus:ring-emerald-500 focus:border-emerald-500 transition-colors shadow-inner placeholder-slate-400" placeholder="Masukkan nama lengkap" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
-                    <select id="student-class" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Pilih Kelas...</option>
-                        <option value="XI TBSM 1">XI TBSM 1</option>
-                        <option value="XI TBSM 2">XI TBSM 2</option>
+                    <label class="block text-sm font-bold text-slate-300 mb-1">Konsentrasi Keahlian (Kelas)</label>
+                    <select id="student-class" class="w-full px-4 py-3 border border-slate-600 bg-slate-700 text-white rounded-lg focus:ring-emerald-500 focus:border-emerald-500 transition-colors shadow-inner">
+                        <option value="" class="text-slate-400">Pilih Kelas...</option>
+                        <option value="X TJKT">X TJKT</option>
+                        <option value="X TBSM">X TBSM</option>
+                        <option value="X TKR">X TKR</option>
+                        <option value="X RPL">X RPL</option>
                     </select>
                 </div>
-                <div class="bg-red-50 p-4 rounded-lg border border-red-200 mt-4">
-                    <h3 class="text-sm font-bold text-red-800 flex items-center"><i class="fas fa-shield-alt mr-2"></i> PERHATIAN</h3>
-                    <ul class="text-xs text-red-700 mt-2 list-disc pl-4 space-y-1">
-                        <li><b>Sistem Proctoring Aktif:</b> Anda Wajib Mengizinkan Akses Kamera.</li>
-                        <li>Dilarang menggunakan layar terbagi (Split Screen).</li>
-                        <li>Dilarang membuka aplikasi lain (Floating Apps).</li>
-                        <li>Ujian HANYA BISA DIKERJAKAN 1 KALI.</li>
+                <div class="bg-red-900/20 p-4 rounded-lg border border-red-800/50 mt-5 shadow-sm">
+                    <h3 class="text-sm font-bold text-red-400 flex items-center tracking-wide"><i class="fas fa-shield-alt mr-2"></i> PROTOKOL KEAMANAN CBT</h3>
+                    <ul class="text-xs text-red-300 mt-2 list-disc pl-4 space-y-1">
+                        <li><b>Sistem Pengawasan Aktif:</b> Wajib izinkan akses Kamera.</li>
+                        <li>Dilarang keras menggunakan layar terbagi (Split Screen).</li>
+                        <li>Dilarang meninggalkan markas (tab ujian) saat misi berlangsung.</li>
+                        <li>Soal & Opsi diacak. Kesempatan ujian hanya <b>SATU KALI</b>.</li>
                     </ul>
                 </div>
-                <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mt-4 transition-colors">
-                    Mulai Ujian <i class="fas fa-arrow-right ml-1"></i>
+                <button onclick="startExam()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-4 rounded-lg mt-6 transition-all transform hover:scale-[1.02] shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center justify-center text-lg tracking-wide border border-emerald-400">
+                    Mulai Evaluasi <i class="fas fa-arrow-right ml-2 text-sm"></i>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Halaman Ujian -->
-    <div id="exam-screen" class="hidden min-h-screen flex flex-col relative z-10 bg-gray-100">
-        <header class="bg-white shadow-md sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+    <div id="exam-screen" class="hidden min-h-screen flex flex-col relative z-10 bg-slate-900">
+        <header class="bg-slate-800 shadow-lg sticky top-0 z-50 border-b-2 border-emerald-500">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-lg text-gray-900" id="display-name">Nama Siswa</h2>
-                    <p class="text-sm text-gray-500" id="display-class">Kelas</p>
+                    <h2 class="font-bold text-lg text-emerald-400" id="display-name">Nama Siswa</h2>
+                    <p class="text-sm text-slate-400" id="display-class">Kelas</p>
                 </div>
                 <div class="text-right flex items-center gap-2 sm:gap-4">
-                    <div class="bg-red-100 text-red-800 px-3 py-1 rounded-full font-bold text-xs sm:text-sm">
-                        Pelanggaran: <span id="cheat-counter">0</span>/3
+                    <div class="bg-slate-700 text-slate-300 px-3 py-1 rounded-full font-bold text-xs sm:text-sm shadow-sm border border-slate-600">
+                        <i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i> Pelanggaran: <span id="cheat-counter" class="text-white">0</span>/3
                     </div>
-                    <div class="bg-blue-100 text-blue-800 px-3 py-2 sm:px-4 rounded-lg font-mono font-bold text-lg flex items-center">
-                        <i class="far fa-clock mr-2"></i> <span id="timer">60:00</span>
+                    <div id="timer-container" class="bg-emerald-900/40 text-emerald-400 px-3 py-2 sm:px-4 rounded-lg font-mono font-bold text-lg flex items-center shadow-inner border border-emerald-800/50 transition-colors duration-300">
+                        <i class="fas fa-stopwatch mr-2 animate-pulse"></i> <span id="timer">25:00</span>
                     </div>
                 </div>
             </div>
         </header>
 
-        <main class="flex-grow max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 relative z-20">
-            <form id="exam-form" class="space-y-8">
-                
-                <!-- BAGIAN A -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">A. Pilihan Ganda</h3>
-                    <div id="sec-a" class="space-y-8">
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Apa tujuan utama kita membuat alur kerja (SOP) yang jelas sebelum mulai mengerjakan servis motor pelanggan?</p>
-                            <div class="space-y-2 pl-4" id="opt-q1">
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="A" class="mt-1"> <span>Agar bengkel terlihat sibuk dan banyak pelanggan yang antre.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="B" class="mt-1"> <span>Memastikan mekanik tidak punya waktu istirahat agar target tercapai.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="C" class="mt-1"> <span>Mengurangi waktu yang terbuang percuma dan meminimalisir kesalahan kerja mekanik.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="D" class="mt-1"> <span>Agar pemilik bengkel bisa memotong gaji mekanik yang bekerja lambat.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q1" value="E" class="mt-1"> <span>Menambah biaya tagihan servis kepada pelanggan karena bengkel memiliki sistem.</span></label>
-                            </div>
-                        </div>
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Pelanggan datang dengan Honda Vario untuk ganti kampas rem depan cakram dan ganti oli mesin. Agar kerjamu efisien dan tidak bolak-balik mengambil alat, perlengkapan utama apa saja yang wajib kamu siapkan di tool trolley sebelum mulai membongkar?</p>
-                            <div class="space-y-2 pl-4" id="opt-q2">
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="A" class="mt-1"> <span>Kunci T-8, T-10, kunci ring 12, obeng plus, palu besi besar, dan cairan pendingin.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="B" class="mt-1"> <span>Kunci T-8, kunci pas 12, obeng minus, tang potong, dan pelumas rantai.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="C" class="mt-1"> <span>Kunci L bintang/heksagonal, Kunci ring/pas 12, tracker CVT, dan obeng plus.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="D" class="mt-1"> <span>Kunci L (sesuai baut kaliper), Kunci ring/shock 12, tang, wadah oli bekas, alat pendorong piston rem, dan kain lap.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="radio" name="q2" value="E" class="mt-1"> <span>Kunci inggris, obeng ketok, tang buaya, wadah oli bekas, dan sikat kawat.</span></label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <main class="flex-grow max-w-4xl mx-auto w-full p-3 sm:p-6 lg:p-8 relative z-20">
+            <form id="exam-form" class="space-y-6">
+                <div id="all-questions-container" class="space-y-6">
 
-                <!-- BAGIAN B -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">B. Pilihan Ganda Kompleks (Pilih 2 atau lebih)</h3>
-                    <div id="sec-b" class="space-y-8">
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Di antara pilihan berikut, mana saja yang termasuk dalam komponen perencanaan "Kebutuhan Peralatan" di sebuah bengkel resmi?</p>
-                            <div class="space-y-2 pl-4" id="opt-q3">
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="A" class="mt-1 rounded text-blue-600"> <span>Mengatur jadwal libur mekanik setiap hari Minggu.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="B" class="mt-1 rounded text-blue-600"> <span>Menyediakan Bike Lift (Bikelift) agar mekanik bekerja dengan postur yang nyaman.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="C" class="mt-1 rounded text-blue-600"> <span>Membuat nota pembayaran rangkap tiga untuk kasir.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="D" class="mt-1 rounded text-blue-600"> <span>Menyiapkan Special Service Tool (SST) khusus untuk membongkar sistem injeksi.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q3" value="E" class="mt-1 rounded text-blue-600"> <span>Menyediakan shadow board (papan alat) agar kunci-kunci mudah dicari dan dikembalikan.</span></label>
-                            </div>
-                        </div>
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Bayangkan kamu ditunjuk menjadi Kepala Mekanik. Untuk memastikan alur kerja "Servis Ringan" berjalan cepat, metode kerja apa saja yang akan kamu terapkan pada timmu?</p>
-                            <div class="space-y-2 pl-4" id="opt-q4">
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="A" class="mt-1 rounded text-blue-600"> <span>Mewajibkan mekanik menyiapkan nampan berisi suku cadang fast-moving sebelum motor naik ke bikelift.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="B" class="mt-1 rounded text-blue-600"> <span>Membiarkan mekanik mencari scanner injeksi ke bengkel sebelah saat sedang butuh.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="C" class="mt-1 rounded text-blue-600"> <span>Menerapkan sistem pembersihan part (komponen) bersamaan saat oli mesin sedang dikuras.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="D" class="mt-1 rounded text-blue-600"> <span>Menunggu pelanggan komplain baru melakukan pengecekan tekanan angin ban.</span></label>
-                                <label class="opt-item flex items-start gap-3 cursor-pointer p-3 border rounded-lg"><input type="checkbox" name="q4" value="E" class="mt-1 rounded text-blue-600"> <span>Melakukan test ride (uji jalan) singkat oleh Quality Control setelah mekanik selesai merakit komponen.</span></label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <script>
+                        const questionsData = [
+                            {
+                                text: "Kelangkaan masker medis atau komponen filter udara saat polusi udara meningkat di kawasan industri menunjukkan bahwa...",
+                                options: [
+                                    "Masyarakat tidak membutuhkan udara bersih.",
+                                    "Jumlah alat pemuas kebutuhan lebih sedikit dibanding melonjaknya kebutuhan masyarakat.",
+                                    "Pabrik sengaja menghentikan produksi agar harga turun.",
+                                    "Barang pemuas kebutuhan selalu melimpah tanpa batas.",
+                                    "Kebutuhan manusia akan berhenti dengan sendirinya."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Manakah yang merupakan contoh kebutuhan sekunder bagi seorang siswa SMK Teknik setelah kebutuhan utamanya terpenuhi?",
+                                options: [
+                                    "Pakaian seragam praktik untuk keselamatan kerja di lab/bengkel.",
+                                    "Makan siang bergizi agar fokus selama jam pelajaran.",
+                                    "Membeli sepatu olahraga bermerek untuk dipakai saat akhir pekan.",
+                                    "Air minum untuk mencegah dehidrasi saat cuaca terik di Karawang.",
+                                    "Tempat tinggal atau rumah yang aman bersama keluarga."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Sebuah komunitas alumni SMK menyumbangkan sejumlah perangkat komputer bekas layak pakai ke panti asuhan. Motif ekonomi yang mendasari tindakan ini adalah...",
+                                options: [
+                                    "Motif memperoleh kekuasaan politik di desa.",
+                                    "Motif mendapatkan keuntungan finansial jangka pendek.",
+                                    "Motif sosial (kepedulian terhadap sesama).",
+                                    "Motif menguasai pasar perdagangan komputer.",
+                                    "Motif memenuhi kebutuhan pokok pribadi."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Kegiatan mengolah bahan mentah menjadi barang setengah jadi atau barang jadi, seperti mengubah lembaran pelat besi menjadi bodi kendaraan, disebut...",
+                                options: [
+                                    "Konsumsi.",
+                                    "Distribusi.",
+                                    "Produksi.",
+                                    "Akumulasi.",
+                                    "Investasi."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Penerapan prinsip ekonomi dalam kehidupan sehari-hari bertujuan untuk...",
+                                options: [
+                                    "Menghamburkan sumber daya demi gengsi sosial.",
+                                    "Membeli barang paling murah tanpa mempedulikan kegunaannya.",
+                                    "Mencapai kepuasan atau hasil maksimal dengan pengorbanan tertentu.",
+                                    "Menimbun barang sebanyak-banyaknya di dalam gudang rumah.",
+                                    "Menghindari segala jenis transaksi jual beli di pasar."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Faktor utama yang mendorong manusia melakukan tindakan ekonomi adalah...",
+                                options: [
+                                    "Perintah langsung dari aparat penegak hukum.",
+                                    "Adanya kelangkaan sarana pemenuh kebutuhan di tengah keinginan yang tidak terbatas.",
+                                    "Keinginan untuk meniru gaya hidup masyarakat luar negeri.",
+                                    "Ketersediaan modal yang tidak terbatas dari perbankan.",
+                                    "Perubahan peraturan jam kerja di kawasan industri."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Siswa SMK yang menggunakan sisa kuota internetnya untuk mempelajari metode troubleshooting jaringan termasuk melakukan kegiatan...",
+                                options: [
+                                    "Produksi.",
+                                    "Distribusi.",
+                                    "Konsumsi.",
+                                    "Akreditasi.",
+                                    "Spekulasi."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Manakah yang termasuk dalam faktor produksi alam bagi sebuah usaha perbengkelan atau lab komputer?",
+                                options: [
+                                    "Keterampilan montir dalam menyetel klep motor.",
+                                    "Dana pinjaman modal awal dari koperasi sekolah.",
+                                    "Udara, pencahayaan matahari, dan lokasi tanah tempat usaha berdiri.",
+                                    "Seperangkat alat pemindai kerusakan mesin (scanner injeksi).",
+                                    "Aplikasi pembukuan keuangan digital."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Kegiatan mengantar hasil rakitan komponen elektronik dari pabrik manufaktur di Karawang ke pelabuhan pengiriman termasuk dalam kegiatan...",
+                                options: [
+                                    "Produksi primer.",
+                                    "Distribusi.",
+                                    "Konsumsi massal.",
+                                    "Komparasi harga.",
+                                    "Eksploitasi alam."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Tujuan akhir dari seseorang yang memanfaatkan jasa teknisi jaringan untuk memasang router di rumahnya adalah...",
+                                options: [
+                                    "Menjual kembali router tersebut ke tetangga.",
+                                    "Mengurangi atau menghabiskan nilai guna jasa demi memenuhi kebutuhan koneksi internet.",
+                                    "Menciptakan lapangan kerja baru bagi industri kabel dunia.",
+                                    "Membantu menaikkan omzet penjualan pabrik router pusat.",
+                                    "Mengubah status barang bebas menjadi barang ekonomi."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Aktivitas ekonomi yang bergerak di bidang pemanfaatan kekayaan alam tanpa mengubah bentuknya, seperti usaha pemotongan batu alam, termasuk...",
+                                options: [
+                                    "Produksi Sekunder.",
+                                    "Produksi Tersier.",
+                                    "Produksi Primer.",
+                                    "Produksi Jasa.",
+                                    "Produksi Manufaktur."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seseorang yang mengikuti sertifikasi keahlian teknik tingkat internasional agar diakui sebagai expert di bidangnya didorong oleh...",
+                                options: [
+                                    "Motif mencari keuntungan tunai harian.",
+                                    "Motif mendapatkan penghargaan dan pengakuan status keahlian.",
+                                    "Motif sosial membantu sesama teknisi pemula.",
+                                    "Motif memenuhi kebutuhan primer sandang.",
+                                    "Motif paksaan dari aturan lingkungan tempat tinggal."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Faktor produksi modal tidak selamanya berupa uang tunai. Contoh faktor produksi modal fisik di bengkel TKR adalah...",
+                                options: [
+                                    "Keahlian mendeteksi kebocoran oli.",
+                                    "Mesin kompresor udara dan dongkrak hidrolik.",
+                                    "Lahan kosong di pinggir jalan raya utama.",
+                                    "Semangat gotong royong para mekanik.",
+                                    "Kesabaran dalam melayani komplain pelanggan."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Layanan perbaikan sistem kelistrikan mobil dan jasa penyewaan bandwidth internet merupakan contoh kegiatan...",
+                                options: [
+                                    "Produksi Sektor Primer.",
+                                    "Produksi Sektor Sekunder.",
+                                    "Produksi Sektor Tersier.",
+                                    "Produksi Bidang Agraris.",
+                                    "Produksi Bidang Ekstraktif."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Hal yang membedakan antara keinginan dan kebutuhan manusia adalah...",
+                                options: [
+                                    "Keinginan harus dipenuhi terlebih dahulu dibanding kebutuhan.",
+                                    "Kebutuhan jika tidak dipenuhi mengancam kelangsungan hidup, sementara keinginan tidak.",
+                                    "Kebutuhan selalu berkaitan dengan barang digital mewah.",
+                                    "Keinginan memiliki batas yang jelas, sedangkan kebutuhan tidak terbatas.",
+                                    "Tidak ada perbedaan karena keduanya memiliki bobot urgensi yang sama."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seorang siswa memiliki uang saku Rp30.000. Ia dihadapkan pada pilihan membeli konektor RJ-45 untuk praktik besok (Rp25.000) atau membeli aksesori gantungan kunci motor (Rp15.000). Tindakan yang paling sesuai dengan skala prioritas ekonomi adalah...",
+                                options: [
+                                    "Membeli gantungan kunci dan mengabaikan tugas praktik sekolah.",
+                                    "Membeli konektor RJ-45 dan menunda pembelian aksesori motor.",
+                                    "Menghabiskan uang untuk jajan di luar sekolah agar terlihat keren.",
+                                    "Meminjam uang teman secara paksa agar bisa membeli kedua barang.",
+                                    "Menyimpan uangnya di saku dan memilih bolos sekolah saat jam praktik."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Sebuah bengkel motor di dekat kawasan industri memilih menggunakan promosi video pendek via TikTok untuk menarik pelanggan daripada mencetak ribuan lembar pamflet. Langkah ini menerapkan prinsip ekonomi dalam hal...",
+                                options: [
+                                    "Produksi bahan baku kertas.",
+                                    "Konsumsi peralatan kantor.",
+                                    "Distribusi informasi secara efisien dan tepat sasaran.",
+                                    "Pengurangan jam operasional mekanik.",
+                                    "Eksploitasi sumber daya alam."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seorang teknisi TJKT merancang denah penataan router WiFi di sebuah ruko dengan menghitung panjang kabel seminimal mungkin tanpa menurunkan kualitas sinyal. Tindakan teknisi ini menerapkan...",
+                                options: [
+                                    "Motif mencari penghargaan kelurahan.",
+                                    "Prinsip ekonomi dalam kegiatan produksi jasa.",
+                                    "Tindakan ekonomi yang tidak rasional.",
+                                    "Motif sosial kemasyarakatan murni.",
+                                    "Kegiatan ekonomi sektor primer terisolasi."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Andi memutuskan untuk berjalan kaki menuju bengkel tempatnya PKL yang berjarak 500 meter dari rumah alih-alih naik ojek online saat uang sakunya menipis. Motif Andi adalah...",
+                                options: [
+                                    "Ingin pamer kekuatan fisik kepada teman-temannya.",
+                                    "Memenuhi kebutuhan transportasi secara hemat sesuai kondisi keuangan.",
+                                    "Memperoleh kekuasaan wilayah di sepanjang jalan.",
+                                    "Motif sosial membantu mengurangi polusi udara kota.",
+                                    "Sekadar mengikuti tren gaya hidup sehat yang sedang viral."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Toko onderdil \"Kariang Motor\" selalu membeli suku cadang langsung dari agen grosir utama dalam jumlah besar agar mendapatkan potongan harga khusus. Tindakan ini mencerminkan prinsip ekonomi untuk...",
+                                options: [
+                                    "Menguras modal usaha secepat mungkin.",
+                                    "Mencapai hasil laba maksimal dengan menekan biaya modal awal.",
+                                    "Mempersulit rantai penjualan ke bengkel kecil.",
+                                    "Mengurangi minat beli masyarakat sekitar.",
+                                    "Menolak penggunaan faktor produksi kewirausahaan."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seorang kurir pengantar paket komputer memilih rute memutar yang sedikit lengang dibanding jalur utama yang macet total saat jam pulang pabrik. Kurir tersebut menerapkan prinsip ekonomi dalam...",
+                                options: [
+                                    "Produksi perangkat keras komputer.",
+                                    "Konsumsi waktu dan bahan bakar secara efisien.",
+                                    "Distribusi logistik berbobot berat.",
+                                    "Penghematan biaya sewa bangunan kantor.",
+                                    "Pemilihan bahan baku kemasan paket."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seorang siswa SMK menyisihkan uang jajannya selama tiga bulan untuk membeli tang crimping berkualitas tinggi agar awet dipakai hingga lulus. Tindakan ini didasari oleh...",
+                                options: [
+                                    "Motif mencari kekuasaan di area lab.",
+                                    "Prinsip ekonomi konsumsi (investasi alat jangka panjang).",
+                                    "Motif sosial demi membantu teman yang tidak punya alat.",
+                                    "Tindakan ekonomi irasional yang membuang uang saku.",
+                                    "Prinsip ekonomi bidang produksi primer ekstraktif."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Akibat harga komponen kuningan naik, sebuah industri rumahan pembuat sekring motor di Karawang mencari bahan alternatif yang kualitasnya setara namun harga grosirnya lebih murah. Tindakan ini bertujuan untuk menerapkan...",
+                                options: [
+                                    "Motif mendapatkan penghargaan dari asosiasi pengusaha.",
+                                    "Prinsip ekonomi produksi untuk menjaga stabilitas harga jual.",
+                                    "Kegiatan konsumsi bahan bakar cadangan pabrik.",
+                                    "Motif persaingan tidak sehat di lingkungan industri.",
+                                    "Alur distribusi barang tanpa perantara agen."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seorang siswa TBSM bersedia memperbaiki rantai sepeda motor milik seorang penjual kerupuk keliling secara sukarela tanpa meminta bayaran. Tindakan ini didorong oleh...",
+                                options: [
+                                    "Motif mencari keuntungan finansial terselubung.",
+                                    "Motif menguasai pangsa pasar servis motor desa.",
+                                    "Motif sosial dan rasa empati kemanusiaan.",
+                                    "Prinsip ekonomi konsumsi barang mewah.",
+                                    "Pemanfaatan faktor produksi alam secara berlebihan."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Manakah tindakan di sekolah yang mencerminkan pemanfaatan faktor produksi kewirausahaan (entrepreneurship)?",
+                                options: [
+                                    "Meminjam buku paket ekonomi di perpustakaan sekolah.",
+                                    "Mengatur dan menggerakkan kelompok kerja siswa untuk membuka jasa servis komputer saat pameran sekolah.",
+                                    "Menghabiskan air minum di dispenser ruang guru tanpa izin.",
+                                    "Duduk diam mendengarkan penjelasan materi dari instruktur bengkel.",
+                                    "Membayar denda keterlambatan pengembalian alat praktikum."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seorang siswa TJKT membeli kabel utuh sepanjang 100 meter, memotongnya menjadi ukuran 2 meter, lalu memasang konektor RJ-45 di kedua ujungnya untuk dijual eceran. Kegiatan memproses kabel ini termasuk...",
+                                options: [
+                                    "Mengurangi nilai guna suatu barang harian.",
+                                    "Menambah nilai guna suatu barang melalui proses produksi.",
+                                    "Memperpanjang alur distribusi barang impor.",
+                                    "Mengambil kekayaan langsung dari alam sekitar.",
+                                    "Memenuhi kebutuhan tersier pengawas sekolah."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seorang siswa rela menjual konsol game miliknya yang jarang dipakai untuk membiayai penggantian ban motornya yang sudah gundul demi keamanan berkendara ke sekolah. Tindakan ini menunjukkan...",
+                                options: [
+                                    "Pembuatan skala prioritas akibat keterbatasan dana menghadapi risiko keselamatan.",
+                                    "Tindakan ekonomi yang salah arah dan merugikan kesenangan pribadi.",
+                                    "Konsol game merupakan kebutuhan primer yang harus disingkirkan.",
+                                    "Motif mencari pujian dari guru piket di gerbang sekolah.",
+                                    "Alur kegiatan ekonomi sektor produksi primer agraris."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Sebuah lini perakitan motor di kawasan industri menggunakan mesin otomatis untuk memasang baut roda agar pengerjaan seragam dan cepat. Tindakan perusahaan ini merupakan upaya...",
+                                options: [
+                                    "Memotong rantai distribusi barang ke dealer resmi.",
+                                    "Meningkatkan efisiensi produksi melalui optimalisasi faktor produksi modal (teknologi).",
+                                    "Mewujudkan motif sosial kepada organisasi serikat pekerja.",
+                                    "Menurunkan nilai estetika kendaraan di mata konsumen akhir.",
+                                    "Memindahkan fokus usaha dari industri sekunder ke sektor primer."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seorang mekanik selalu mencatat volume oli yang keluar dan masuk dari ruang penyimpanan secara teliti setiap sore. Secara ilmu ekonomi, tindakan administrasi ini merupakan...",
+                                options: [
+                                    "Pemborosan waktu yang tidak berdampak pada laba usaha.",
+                                    "Penerapan prinsip ekonomi dalam meminimalisir risiko kehilangan aset usaha.",
+                                    "Tindakan konsumsi alat tulis kantor yang berlebihan di bengkel.",
+                                    "Motif ekonomi untuk mendapatkan penghargaan sebagai karyawan terajin.",
+                                    "Alur kegiatan distribusi pendapatan kepada para pemegang saham."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Pengepul mengumpulkan ban bekas dari berbagai bengkel di Karawang, lalu menyalurkannya menggunakan armada truk ke pabrik daur ulang karet. Peran pengepul tersebut dalam sistem ekonomi adalah sebagai...",
+                                options: [
+                                    "Produsen sektor primer.",
+                                    "Distributor.",
+                                    "Konsumen tingkat akhir.",
+                                    "Pemilik faktor produksi alam.",
+                                    "Pengusaha industri ekstraktif."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Di area dekat kawasan industri Karawang yang padat pekerja, tarif sewa kamar kos atau kontrakan melonjak sangat tinggi. Analisislah fenomena ini berdasarkan konsep kelangkaan!",
+                                options: [
+                                    "Tarif naik karena pemilik kos ingin mengusir para pekerja pendatang secara halus.",
+                                    "Terjadi kelangkaan ruang hunian akibat jumlah pencari kos (permintaan) sangat tinggi, sedangkan luas tanah untuk membangun kos baru sangat terbatas.",
+                                    "Pemerintah daerah mewajibkan tarif kos mahal agar pendapatan daerah meningkat.",
+                                    "Minat pekerja untuk memiliki tempat tinggal sendiri sudah hilang sepenuhnya.",
+                                    "Harga bahan bangunan di Karawang mengalami penurunan yang sangat drastis."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Bagaimanakah analisis dampak jangka panjang yang akan terjadi jika sebuah bengkel teknik beroperasi secara konsisten tanpa menerapkan prinsip ekonomi?",
+                                options: [
+                                    "Jumlah pelanggan akan terus bertambah karena harga servis pasti murah.",
+                                    "Bengkel akan mengalami kebocoran anggaran operasional yang memicu kebangkrutan usaha meskipun volume kerja harian ramai.",
+                                    "Struktur modal usaha akan menguat dengan sendirinya tanpa perlu pengawasan keuangan.",
+                                    "Motif sosial dan solidaritas antar mekanik di bengkel tersebut akan meningkat tajam.",
+                                    "Efisiensi waktu kerja mekanik akan tercapai secara otomatis tanpa regulasi."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Seorang lulusan SMK ingin membuka jasa instalasi jaringan internet mandiri. Ia memiliki kompetensi tinggi namun kekurangan modal alat ukur (Optical Time Domain Reflectometer). Jika ia memutuskan mengambil pinjaman modal dengan perhitungan matang untuk membeli alat tersebut, analisislah tindakan ekonomi tersebut!",
+                                options: [
+                                    "Tindakan tersebut keliru karena pinjaman modal selalu berujung pada kerugian usaha.",
+                                    "Tindakan tersebut tepat karena ia menambah faktor produksi modal fisik untuk meningkatkan kapasitas dan kualitas produksi jasanya.",
+                                    "Tindakan tersebut termasuk konsumsi barang mewah karena alat tersebut berharga mahal.",
+                                    "Langkah itu diambil hanya berdasarkan motif mendapatkan penghargaan dari komunitas pengusaha.",
+                                    "Kegiatan yang dilakukan termasuk ke dalam sektor produksi primer ekstraktif."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Analisislah hubungan sebab-akibat antara kelangkaan pasokan tembaga dunia sebagai bahan baku kabel dengan tarif pemasangan jaringan internet baru!",
+                                options: [
+                                    "Kelangkaan tembaga memaksa produsen menurunkan tarif instalasi agar pelanggan tidak lari.",
+                                    "Kelangkaan tembaga menghambat produksi kabel, menaikkan biaya produksi pabrik, sehingga berujung pada kenaikan tarif pasang baru di tingkat konsumen.",
+                                    "Pasokan tembaga tidak memiliki pengaruh langsung terhadap biaya operasional industri jaringan.",
+                                    "Kelangkaan tembaga akan meningkatkan jumlah permintaan pemasangan internet secara drastis.",
+                                    "Produsen internet akan langsung mengganti semua kabel fisik menjadi jaringan tanpa kabel tanpa biaya tambahan."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Sebuah bengkel pembuangan oli bekas sengaja membuang limbah cairnya langsung ke saluran air warga demi menekan biaya pengolahan limbah yang mahal. Evaluasilah tindakan bengkel tersebut berdasarkan analisis motif ekonomi!",
+                                options: [
+                                    "Bengkel tersebut telah menerapkan prinsip ekonomi produksi secara sempurna dan patut ditiru bisnis lain.",
+                                    "Bengkel hanya berfokus pada motif mencari keuntungan jangka pendek (profit) dengan mengabaikan motif sosial dan tanggung jawab lingkungan.",
+                                    "Tindakan bengkel tersebut termasuk dalam kategori produksi primer ekstraktif yang legal secara hukum ekonomi.",
+                                    "Konsumen sekitar akan meningkatkan konsumsi jasa bengkel tersebut karena harga servisnya menjadi lebih murah.",
+                                    "Motif kekuasaan pasar yang dimiliki bengkel tersebut lebih rendah dibandingkan kepedulian sosialnya."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Jika dalam sebuah ekosistem pasar industri semua pelaku usaha murni bergerak hanya berdasarkan motif mencari keuntungan tanpa diimbangi motif sosial dan kepatuhan aturan, apa simpulan dampak sosial ekonomi yang akan terjadi?",
+                                options: [
+                                    "Pasar akan mencapai titik keseimbangan yang adil dan menyejahterakan semua lapisan masyarakat.",
+                                    "Terjadi eksploitasi sumber daya, persaingan usaha tidak sehat yang merusak tatanan, dan kerugian besar bagi masyarakat konsumen.",
+                                    "Kelangkaan barang dan jasa pemenuh kebutuhan akan lenyap dari muka bumi untuk selamanya.",
+                                    "Biaya distribusi logistik antar wilayah akan terpangkas hingga menyentuh angka nol rupiah.",
+                                    "Seluruh lapisan masyarakat akan bertransformasi menjadi produsen sektor tersier yang makmur."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Hubungkan konsep biaya peluang (opportunity cost) dan investasi diri: Mengapa keputusan siswa untuk belajar serius selama masa PKL di industri manufaktur dinilai sesuai dengan prinsip ekonomi masa depan?",
+                                options: [
+                                    "Karena siswa ingin menghindari kewajiban belajar teori di dalam kelas sekolah.",
+                                    "Siswa merelakan waktu luang bermainnya saat ini (biaya peluang) demi meningkatkan kualitas faktor produksi tenaga kerja mereka agar bernilai jual tinggi saat lulus.",
+                                    "Karena perusahaan PKL selalu memberikan upah tunai yang sangat besar bagi semua siswa magang.",
+                                    "PKL merupakan bentuk kegiatan konsumsi jasa hiburan teknologi industri oleh siswa SMK.",
+                                    "PKL mampu menghilangkan masalah pengangguran struktural secara instan tanpa proses seleksi kerja."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Analisislah peran penerapan sistem aplikasi inventaris berbasis komputasi awan (cloud inventory) dalam kegiatan distribusi logistik di gudang industri Karawang!",
+                                options: [
+                                    "Aplikasi cloud memperlambat proses pengiriman karena kurir harus selalu melihat layar telepon genggam.",
+                                    "Aplikasi cloud mempercepat pembacaan stok, meminimalkan salah kirim, dan mengoptimalkan rute kurir sehingga meningkatkan efisiensi distribusi.",
+                                    "Sistem cloud hanya berfungsi sebagai media hiburan (konsumsi digital) bagi para staf gudang.",
+                                    "Penerapan teknologi informasi ini memindahkan lokasi gudang fisik ke dalam ruang virtual digital.",
+                                    "Kecepatan pengiriman logistik tidak memiliki kaitan dengan akurasi pencatatan data stok barang."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Jika akses jembatan penghubung utama jalur truk logistik yang menyuplai komponen mesin ke area industri terputus total akibat bencana alam, prediksikan dampak ekonominya terhadap pasar lokal!",
+                                options: [
+                                    "Terjadi kelangkaan lokal komponen yang memicu lonjakan harga, keterlambatan produksi pabrik, dan gangguan pemenuhan kebutuhan konsumen.",
+                                    "Penduduk sekitar akan berhenti menggunakan kendaraan dan memproduksi suku cadang sendiri secara manual.",
+                                    "Motif mencari penghargaan dari pemerintah daerah akan meningkat secara spontan di kalangan buruh.",
+                                    "Semua suku cadang yang tertahan di truk akan berubah status hukumnya menjadi barang bebas yang gratis.",
+                                    "Rantai kegiatan konsumsi masyarakat akan langsung bergeser ke sektor produksi primer bidang agraris."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            },
+                            {
+                                text: "Simpulkan kaitan antara kecerdasan seorang wirausahawan teknik dalam mengelola manajemen risiko dengan keberlanjutan masa depan usahanya!",
+                                options: [
+                                    "Keberhasilan usaha ditentukan 100% oleh banyaknya jumlah modal uang tunai yang tersimpan di awal.",
+                                    "Kemampuan manajerial (faktor produksi kewirausahaan) sangat vital untuk mengombinasikan faktor alam, tenaga kerja, dan modal secara kreatif agar adaptif menghadapi perubahan pasar.",
+                                    "Faktor lokasi fisik usaha (faktor alam) jauh lebih menentukan kesuksesan dibanding metode pengelolaan internal bisnis.",
+                                    "Kemampuan manajerial hanya diperlukan apabila sebuah unit usaha teknik telah bermitra dengan perusahaan multinasional.",
+                                    "Tanpa adanya manajemen keuangan yang rapi, sebuah usaha produksi sektor primer agraris akan tetap berjalan stabil."
+                                ],
+                                values: ["A", "B", "C", "D", "E"]
+                            }
+                        ];
 
-                <!-- BAGIAN C -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">C. Pasangkan Jawaban (Drag & Drop)</h3>
-                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-hand-pointer text-blue-500 mr-1"></i> Sentuh dan geser kotak biru ke area putus-putus.</p>
-                    <div id="sec-c" class="space-y-10">
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Pasangkan istilah dalam alur kerja bengkel berikut dengan fungsinya yang tepat!</p>
-                            <div class="flex flex-col md:flex-row gap-6">
-                                <div class="w-full md:w-1/3 bg-blue-50 p-4 rounded-xl border border-blue-200">
-                                    <!-- Menghapus atribut draggable="true" bawaan HTML5 -->
-                                    <div class="space-y-2 min-h-[50px]" id="source-q5">
-                                        <div id="q5_A" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Shadow Board</div>
-                                        <div id="q5_B" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Check Sheet (PKB)</div>
-                                        <div id="q5_C" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">SOP</div>
-                                        <div id="q5_D" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Work Flow</div>
-                                        <div id="q5_E" data-group="q5" class="draggable-item bg-blue-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Special Service Tool (SST)</div>
+                        const container = document.getElementById('all-questions-container');
+                        let htmlContent = '';
+
+                        questionsData.forEach((q, index) => {
+                            const qIndex = index + 1;
+                            let optionsHtml = '';
+                            q.options.forEach((opt, optIndex) => {
+                                optionsHtml += `
+                                    <label class="opt-item flex items-start gap-3 cursor-pointer p-4 border border-slate-600 bg-slate-700/50 rounded-lg transition-colors hover:border-emerald-500">
+                                        <input type="radio" name="q${qIndex}" value="${q.values[optIndex]}" class="mt-1 accent-emerald-500 w-4 h-4"> 
+                                        <span class="text-slate-300 leading-relaxed">${opt}</span>
+                                    </label>
+                                `;
+                            });
+
+                            htmlContent += `
+                                <div class="q-block bg-slate-800 p-6 sm:p-8 rounded-xl shadow-lg border border-slate-700">
+                                    <div class="mb-4 flex items-center justify-between border-b border-slate-600/50 pb-3">
+                                        <span class="text-xs font-bold tracking-widest text-emerald-400 uppercase"><i class="fas fa-coins mr-2"></i> Soal Pilihan Ganda</span>
+                                    </div>
+                                    <p class="font-medium text-slate-200 mb-5 text-justify leading-relaxed text-[1.05rem]"><span class="q-num font-bold text-xl mr-1 text-emerald-500"></span> ${q.text}</p>
+                                    <div class="space-y-3" id="opt-q${qIndex}">
+                                        ${optionsHtml}
                                     </div>
                                 </div>
-                                <div class="w-full md:w-2/3 space-y-3">
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Buku panduan urutan kerja standar pabrik.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q5"></div></div>
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Papan tempat menggantung kunci-kunci bengkel.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q5"></div></div>
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Alur perpindahan motor dari datang sampai pulang.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q5"></div></div>
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Alat khusus untuk pekerjaan yang tidak pakai kunci standar.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q5"></div></div>
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Kertas kerja yang berisi daftar pengecekan motor.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q5"></div></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Cocokkan jenis pekerjaan servis di bawah ini dengan kebutuhan peralatan khusus (SST)!</p>
-                            <div class="flex flex-col md:flex-row gap-6">
-                                <div class="w-full md:w-1/3 bg-green-50 p-4 rounded-xl border border-green-200">
-                                    <div class="space-y-2 min-h-[50px]" id="source-q6">
-                                        <div id="q6_A" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Jangka Sorong</div>
-                                        <div id="q6_B" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Diagnostic Scanner</div>
-                                        <div id="q6_C" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Fuel Pressure Gauge</div>
-                                        <div id="q6_D" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Tracker Bearing</div>
-                                        <div id="q6_E" data-group="q6" class="draggable-item bg-emerald-600 text-white text-sm p-3 rounded-lg shadow text-center select-none">Tracker CVT</div>
-                                    </div>
-                                </div>
-                                <div class="w-full md:w-2/3 space-y-3">
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Membuka mur mangkok kopling ganda pada CVT matic.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q6"></div></div>
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Mengecek tekanan bahan bakar dari fuel pump.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q6"></div></div>
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Melepas bearing/lahar roda yang menempel ketat.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q6"></div></div>
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Mengukur keausan kampas rem cakram secara presisi.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q6"></div></div>
-                                    <div class="flex items-center gap-3"><div class="flex-1 text-sm bg-gray-50 p-3 rounded-lg border text-gray-700">Mengecek kerusakan sensor pada sistem injeksi.</div><div class="dropzone w-40 rounded-lg flex items-center justify-center bg-gray-50" data-group="q6"></div></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BAGIAN D -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">D. Urutkan Jawaban</h3>
-                    <p class="text-sm text-gray-500 mb-4"><i class="fas fa-arrows-alt-v text-blue-500 mr-1"></i> Sentuh dan tahan <b>ikon garis tiga (disebelah kiri)</b> lalu geser ke atas/bawah.</p>
-                    <div id="sec-d" class="space-y-8">
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Urutkan langkah-langkah alur kerja "Penerimaan Jasa Servis" yang paling efisien!</p>
-                            <ul class="sortable-list space-y-2 bg-gray-50 p-4 rounded-xl border" id="sort-q7">
-                                <!-- Hapus draggable="true" dan Tambah drag-handle di ikon -->
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="A"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Mekanik memasukkan motor ke pit/bikelift dan mulai mengerjakan sesuai form.</span></li>
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="B"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Pelanggan disambut oleh Service Advisor (SA).</span></li>
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="C"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Kasir memanggil pelanggan untuk pembayaran dan penyerahan kunci motor.</span></li>
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="D"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Motor selesai, dicek oleh Kepala Mekanik (Final Check) dan dicuci.</span></li>
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="E"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">SA mencatat keluhan di formulir PKB dan mengestimasi biaya/waktu.</span></li>
-                            </ul>
-                        </div>
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3"><span class="q-num font-bold"></span> Urutkan metode kerja standar yang efisien dan aman saat kamu melakukan servis CVT motor matic!</p>
-                            <ul class="sortable-list space-y-2 bg-gray-50 p-4 rounded-xl border" id="sort-q8">
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="A"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Membersihkan area dalam CVT dengan udara bertekanan dan cairan pembersih.</span></li>
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="B"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Membuka cover (tutup) blok CVT menggunakan kunci T-8.</span></li>
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="C"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Memasang kembali komponen, mengencangkan dengan torsi, dan menutup cover.</span></li>
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="D"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Melepas puli depan dan puli belakang menggunakan tracker khusus CVT.</span></li>
-                                <li class="sortable-item bg-white border p-4 rounded-lg shadow-sm flex items-center gap-4 select-none" data-id="E"><i class="fas fa-grip-lines text-gray-400 text-lg drag-handle"></i><span class="text-sm">Mengecek kondisi v-belt, roller, dan kampas ganda.</span></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BAGIAN E -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">E. Benar atau Salah</h3>
-                    <div id="sec-e" class="space-y-6">
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3 text-justify"><span class="q-num font-bold"></span> "Mengabaikan penempatan alat pada shadow board atau tool box setelah selesai digunakan tidak akan mempengaruhi efisiensi waktu servis mekanik pada pelanggan berikutnya."</p>
-                            <div class="flex gap-4 sm:gap-6 pl-4">
-                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center"><input type="radio" name="q9" value="BENAR"> <span class="font-bold text-green-700">BENAR</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center"><input type="radio" name="q9" value="SALAH"> <span class="font-bold text-red-700">SALAH</span></label>
-                            </div>
-                        </div>
-                        <div class="q-block">
-                            <p class="font-medium text-gray-800 mb-3 text-justify"><span class="q-num font-bold"></span> "Mekanik A selalu membongkar area CVT dan cover body injeksi secara bersamaan lalu alat-alatnya dicampur dalam satu nampan. Sementara Mekanik B menyelesaikan area CVT dulu sampai rapi, mengembalikan alatnya, baru pindah membongkar area injeksi. Dari segi perencanaan alur kerja dan risiko komponen hilang, metode Mekanik B lebih efisien dan terencana dibandingkan Mekanik A."</p>
-                            <div class="flex gap-4 sm:gap-6 pl-4">
-                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center"><input type="radio" name="q10" value="BENAR"> <span class="font-bold text-green-700">BENAR</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 border rounded-lg w-32 justify-center"><input type="radio" name="q10" value="SALAH"> <span class="font-bold text-red-700">SALAH</span></label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BAGIAN F -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-lg border-b pb-2 mb-4 text-blue-800">F. Uraian & Studi Kasus</h3>
-                    <div id="sec-f" class="space-y-6">
-                        <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Menurut pemahamanmu, mengapa sebuah bisnis jasa servis seperti Bengkel Kita Bersama harus merencanakan penempatan atau tata letak (layout) peralatannya, seperti letak kompresor, rak oli, dan area cuci motor? Jelaskan dengan bahasamu sendiri!</label>
-                            <textarea name="q11" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
-                        </div>
-                        <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Bengkel Kita Bersama akan mengadakan promo "Ganti Oli Mesin & Cek Tekanan Ban Super Cepat: Maksimal 10 Menit!". Sebagai mekanik andalan, coba rencanakan kebutuhan peralatan apa saja yang harus sudah siap di dekatmu, dan bagaimana alur kerjamu agar target 10 menit itu tercapai tanpa mengorbankan kualitas!</label>
-                            <textarea name="q12" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
-                        </div>
-                        <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Kamu menyadari bahwa waktu tunggu servis pelanggan jadi sangat lama hanya karena 3 orang mekanik sering berebut dan menunggu untuk menggunakan 1 buah selang angin Air Compressor. Rencanakan sebuah metode alur kerja atau solusi tata letak agar masalah ini teratasi tanpa bengkel harus membeli mesin kompresor baru!</label>
-                            <textarea name="q13" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik jawaban Anda di sini..."></textarea>
-                        </div>
-                        <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> Alat yang hilang atau rusak bikin proses produksi terhambat. Buatlah sebuah prosedur (Standard Operating Procedure / SOP) sederhana berisi 5 langkah berurutan yang harus dilakukan mekanik untuk merawat alat kerjanya setiap kali jam bengkel tutup!</label>
-                            <textarea name="q14" rows="4" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>
-                        </div>
-                        <div class="q-block">
-                            <label class="font-medium text-gray-800 mb-2 block text-justify leading-relaxed"><span class="q-num font-bold"></span> <b>STUDI KASUS:</b> Bayangkan kamu sedang merancang sistem kerja untuk Bengkel Kita Bersama yang berlokasi di Jl. Pondok Lele Kp. Bakan Sereh Desa Dawuan Barat. Sebelum buka, kamu mengamati dua bengkel kompetitor di sekitar sana:<br><br>- <b>Bengkel A:</b> Punya alat yang sangat lengkap dan mahal, tapi mekaniknya sering mondar-mandir mencari kunci yang tercecer, sehingga satu servis ringan butuh waktu 2 jam. Sering terjadi baut yang tertukar.<br>- <b>Bengkel B:</b> Alatnya standar biasa, tapi mekaniknya punya nampan khusus per jenis servis, alat selalu dikembalikan ke tempatnya, sehingga servis ringan cuma butuh 45 menit dengan hasil memuaskan.<br><br>Analisislah apa kelemahan fatal pada sistem manajemen alat dan alur kerja di Bengkel A! Lalu, berikan minimal 3 saran evaluasi kritis agar Bengkel Kita Bersama nantinya bisa beroperasi seefisien Bengkel B!</label>
-                            <textarea name="q15" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Ketik analisis dan saran Anda di sini..."></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-end pt-4 pb-12">
-                    <button type="button" id="btn-submit" onclick="confirmSubmit()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-xl shadow-lg flex items-center gap-3">
-                        <i class="fas fa-paper-plane"></i> Selesai & Kirim Jawaban
+                            `;
+                        });
+                        
+                        container.innerHTML = htmlContent;
+                    </script>
+                    </div> 
+                <div class="flex justify-end pt-8 pb-12">
+                    <button type="button" id="btn-submit" onclick="confirmSubmit()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-8 sm:px-12 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-3 transition-transform active:scale-95 text-lg tracking-wide border border-emerald-400">
+                        <i class="fas fa-paper-plane"></i> Serahkan Jawaban
                     </button>
                 </div>
             </form>
@@ -324,26 +621,29 @@
     </div>
 
     <script>
-        // MASUKKAN URL GOOGLE SCRIPT ANDA DI SINI
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziO9w_T6OL_lq42dYabFfeu1sKgcNYdZWdhOUncneVp855--n4_fSFQwXKHXVQp4TaSA/exec'; 
+        // GANTI URL DI BAWAH INI DENGAN URL APPS SCRIPT ANDA DARI LANGKAH SEBELUMNYA
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGm_Qfuk0XVHy9b9JZYgsBT2p_DfUIAU_iGRPYkLGFQJ5zROKTp7hg8MuszCM8n1H2/exec'; 
         
         let studentName = "", studentClass = "";
         let cheatCount = 0, examActive = false;
-        let timeLeft = 3600, timerInterval;
+        let timeLeft = 1500, timerInterval; // 25 Menit (1500 detik)
         let initialWidth = window.innerWidth;
         let cctvInterval; 
         
-        let isGracePeriod = false; 
+        let isGracePeriod = true; 
         let ignoredFirstStrike = false; 
         let isWarningOpen = false; 
 
         window.onload = function() {
-            if (localStorage.getItem('ujian_bengkel_selesai') === 'true') {
+            if (localStorage.getItem('pts_sejarah_selesai') === 'true') {
                 document.getElementById('login-screen').innerHTML = `
-                    <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full border-t-4 border-red-600 text-center">
-                        <i class="fas fa-user-lock text-5xl text-red-600 mb-4"></i>
-                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Akses Ditolak</h2>
-                        <p class="text-gray-600">Anda sudah mengerjakan ujian ini di perangkat ini.</p>
+                    <div class="bg-slate-800 p-8 rounded-xl shadow-lg max-w-md w-full border-t-8 border-emerald-500 text-center relative overflow-hidden">
+                        <div class="absolute -top-10 -right-10 text-emerald-900/40"><i class="fas fa-lock text-9xl"></i></div>
+                        <div class="relative z-10">
+                            <i class="fas fa-user-lock text-5xl text-emerald-500 mb-4"></i>
+                            <h2 class="text-2xl font-bold text-white mb-2 tracking-wide">Akses Ditolak</h2>
+                            <p class="text-slate-400">Sistem mencatat Anda telah menyerahkan dokumen evaluasi ini.</p>
+                        </div>
                     </div>`;
             }
         };
@@ -352,14 +652,19 @@
             studentName = document.getElementById('student-name').value.trim();
             studentClass = document.getElementById('student-class').value;
             if (!studentName || !studentClass) {
-                Swal.fire({ icon: 'error', title: 'Oops...', text: 'Silakan isi Nama dan Kelas terlebih dahulu!' });
+                Swal.fire({ 
+                    icon: 'error', title: 'Perhatian', text: 'Nama dan Konsentrasi Keahlian (Kelas) wajib diisi!',
+                    background: '#1e293b', color: '#f8fafc', confirmButtonColor: '#10b981'
+                });
                 return;
             }
 
             Swal.fire({
-                title: 'Mohon Izinkan Kamera',
-                text: 'Sistem Proctoring membutuhkan akses kamera Anda untuk memulai ujian.',
+                title: 'Otorisasi Kamera',
+                text: 'Sistem pengawasan (Proctoring) membutuhkan akses kamera untuk memulai.',
                 icon: 'info',
+                confirmButtonColor: '#10b981',
+                background: '#1e293b', color: '#f8fafc',
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
@@ -373,7 +678,7 @@
                 
                 Swal.close(); 
                 
-                randomizeExam();
+                randomizeExam(); 
                 document.getElementById('display-name').textContent = studentName;
                 document.getElementById('display-class').textContent = studentClass;
                 
@@ -383,36 +688,41 @@
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('exam-screen').classList.remove('hidden');
                 
+                const bgm = document.getElementById('bgm-audio');
+                bgm.volume = 0.2; 
+                bgm.play().catch(e => console.log("BGM autoplay dicegah browser"));
+
                 examActive = true; 
                 
                 isGracePeriod = true;
-                window.focus(); 
-                setTimeout(() => { isGracePeriod = false; }, 10000);
+                setTimeout(() => { 
+                    window.focus();
+                    isGracePeriod = false; 
+                }, 10000);
 
                 startTimer(); 
-                initSortableJS(); // Inisialisasi Fitur Geser yang Baru
+                initSortableJS(); // Mempertahankan fungsi bawaan script original
                 
                 setTimeout(captureCCTV, 5000); 
                 cctvInterval = setInterval(captureCCTV, 60000); 
             })
             .catch(function(err) {
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Akses Ditolak',
-                    text: 'Anda tidak dapat mengikuti ujian tanpa mengizinkan akses kamera.',
-                    confirmButtonText: 'Coba Lagi'
+                    icon: 'error', title: 'Akses Ditolak',
+                    text: 'Ujian tidak dapat diakses tanpa izin kamera untuk pengawasan.',
+                    confirmButtonText: 'Coba Lagi',
+                    confirmButtonColor: '#10b981',
+                    background: '#1e293b', color: '#f8fafc'
                 });
             });
         }
 
         function captureCCTV() {
             if (!examActive) return;
-            
             const video = document.getElementById('cctv-video');
             const canvas = document.getElementById('cctv-canvas');
             
-            canvas.width = 320;
-            canvas.height = 240;
+            canvas.width = 320; canvas.height = 240;
             const context = canvas.getContext('2d');
             
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -421,16 +731,10 @@
             const timeNow = new Date().toLocaleTimeString('id-ID').replace(/[:.]/g, '-');
             const fileName = `${studentName.replace(/\s+/g, '_')}_${studentClass.replace(/\s+/g, '')}_${timeNow}.jpg`;
 
-            const payload = {
-                type: "cctv",
-                nama: studentName, 
-                filename: fileName,
-                image: dataUrl
-            };
+            const payload = { type: "cctv", nama: studentName, kelas: studentClass, filename: fileName, image: dataUrl };
 
             fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
+                method: 'POST', mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload)
             }).catch(e => console.log("Fetch Error")); 
@@ -448,11 +752,22 @@
                 items.forEach(item => container.appendChild(item)); 
             };
 
-            ['opt-q1','opt-q2','opt-q3','opt-q4'].forEach(id => shuffleElements(id, '.opt-item'));
-            ['source-q5','source-q6'].forEach(id => shuffleElements(id, '.draggable-item'));
-            ['sort-q7','sort-q8'].forEach(id => shuffleElements(id, '.sortable-item'));
-            ['sec-a','sec-b','sec-c','sec-d','sec-e','sec-f'].forEach(id => shuffleElements(id, '.q-block'));
+            // Acak Opsi Jawaban (A, B, C, D, E) untuk ke-40 Soal
+            for(let i = 1; i <= 40; i++){
+                shuffleElements('opt-q' + i, '.opt-item');
+            }
 
+            // Acak Urutan Nomor Soal
+            const masterContainer = document.getElementById('all-questions-container');
+            const questionBlocks = Array.from(masterContainer.querySelectorAll('.q-block'));
+            
+            for (let i = questionBlocks.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [questionBlocks[i], questionBlocks[j]] = [questionBlocks[j], questionBlocks[i]];
+            }
+            questionBlocks.forEach(block => masterContainer.appendChild(block));
+
+            // Rapikan kembali nomor urut soal
             let currentNumber = 1;
             document.querySelectorAll('.q-block .q-num').forEach(span => {
                 span.textContent = currentNumber + ". ";
@@ -468,19 +783,17 @@
                 const s = (timeLeft % 60).toString().padStart(2, '0');
                 document.getElementById('timer').textContent = `${m}:${s}`;
                 if (timeLeft === 300) {
-                    document.getElementById('timer').classList.replace('bg-blue-100', 'bg-red-100');
-                    document.getElementById('timer').classList.replace('text-blue-800', 'text-red-800');
+                    // Peringatan 5 Menit Terakhir (Warna Merah untuk Tema Gelap)
+                    const timerContainer = document.getElementById('timer-container');
+                    timerContainer.classList.remove('bg-emerald-900/40', 'text-emerald-400', 'border-emerald-800/50');
+                    timerContainer.classList.add('bg-red-900/80', 'text-white', 'border-red-500');
                 }
             }, 1000);
         }
 
         function handleCheatDetected(reason) {
             if (!examActive || isGracePeriod || isWarningOpen) return; 
-            
-            if (!ignoredFirstStrike) {
-                ignoredFirstStrike = true;
-                return; 
-            }
+            if (!ignoredFirstStrike) { ignoredFirstStrike = true; return; }
 
             cheatCount++; 
             document.getElementById('cheat-counter').textContent = cheatCount;
@@ -491,20 +804,16 @@
             } else {
                 isWarningOpen = true;
                 Swal.fire({ 
-                    icon: 'warning', 
-                    title: 'Peringatan Pelanggaran!', 
+                    icon: 'warning', title: 'Peringatan Pelanggaran!', 
                     text: `${reason}. Peringatan ${cheatCount} dari 3. Jika 3 kali, ujian otomatis terkunci.`, 
-                    confirmButtonColor: '#d33',
-                    allowOutsideClick: false
-                }).then(() => {
-                    isWarningOpen = false;
-                });
+                    confirmButtonColor: '#ef4444', allowOutsideClick: false,
+                    background: '#1e293b', color: '#f8fafc'
+                }).then(() => { isWarningOpen = false; });
             }
         }
 
         setInterval(() => {
             if (!examActive) return;
-            
             if (!isGracePeriod && !document.hasFocus()) {
                 document.getElementById('exam-screen').classList.add('blur-screen'); 
                 handleCheatDetected("Membuka Layar Lain / Kehilangan Fokus");
@@ -519,19 +828,14 @@
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 let widthChange = Math.abs(window.innerWidth - initialWidth);
-                if (!isGracePeriod && widthChange > 150) {
-                    handleCheatDetected("Terdeteksi menggunakan Split Screen");
-                }
+                if (!isGracePeriod && widthChange > 150) { handleCheatDetected("Terdeteksi menggunakan Split Screen"); }
                 initialWidth = window.innerWidth;
             }, 500); 
         });
 
         document.addEventListener("visibilitychange", () => {
-            if (examActive && document.hidden && !isGracePeriod) {
-                handleCheatDetected("Meninggalkan Tab Ujian");
-            }
+            if (examActive && document.hidden && !isGracePeriod) handleCheatDetected("Meninggalkan Tab Ujian");
         });
-
         document.addEventListener('keydown', (e) => {
             if (!examActive) return;
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) || (e.ctrlKey && e.key === 'U')) {
@@ -539,139 +843,157 @@
             }
             if (e.ctrlKey && ['c','v','x'].includes(e.key)) e.preventDefault();
         });
-
         document.addEventListener('keyup', (e) => {
             if (examActive && (e.key === 'PrintScreen' || e.keyCode === 44)) {
                 navigator.clipboard.writeText(''); handleCheatDetected("Mencoba Screenshot");
             }
         });
 
-        /* =========================================
-           FITUR SORTABLE JS BARU (100% AMAN UNTUK SEMUA ANDROID)
-        ========================================= */
         function initSortableJS() {
-            // Soal Drag & Drop Kelompok 5
-            new Sortable(document.getElementById('source-q5'), {
-                group: { name: 'q5', put: true },
-                animation: 150, sort: false
-            });
-            document.querySelectorAll('.dropzone[data-group="q5"]').forEach(zone => {
-                new Sortable(zone, {
-                    group: { name: 'q5', put: function (to) { return to.el.children.length < 1; } },
-                    animation: 150
-                });
-            });
-
-            // Soal Drag & Drop Kelompok 6
-            new Sortable(document.getElementById('source-q6'), {
-                group: { name: 'q6', put: true },
-                animation: 150, sort: false
-            });
-            document.querySelectorAll('.dropzone[data-group="q6"]').forEach(zone => {
-                new Sortable(zone, {
-                    group: { name: 'q6', put: function (to) { return to.el.children.length < 1; } },
-                    animation: 150
-                });
-            });
-
-            // Soal Urutkan Q7 & Q8 (HANYA BISA DITARIK DARI IKON)
-            new Sortable(document.getElementById('sort-q7'), {
-                animation: 150,
-                handle: '.drag-handle', // Elemen yang bisa diklik untuk ditarik
-                ghostClass: 'sortable-ghost'
-            });
-            new Sortable(document.getElementById('sort-q8'), {
-                animation: 150,
-                handle: '.drag-handle',
-                ghostClass: 'sortable-ghost'
-            });
+            // Placeholder: Dipertahankan untuk mencegah error referensi dari fungsi sebelumnya
         }
 
         function confirmSubmit() {
             Swal.fire({ 
-                title: 'Kirim Jawaban?', 
-                text: "Pastikan Anda telah mengisi seluruh jawaban. Ujian tidak bisa diulang!", 
-                icon: 'question', 
-                showCancelButton: true, confirmButtonColor: '#2563eb', cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Kirim Data!', cancelButtonText: 'Batal' 
+                title: 'Serahkan Arsip Jawaban?', text: "Pastikan seluruh soal telah terjawab. Evaluasi tidak bisa diulang!", 
+                icon: 'question', showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#475569',
+                confirmButtonText: 'Ya, Serahkan!', cancelButtonText: 'Batal',
+                background: '#1e293b', color: '#f8fafc'
             }).then((result) => { if (result.isConfirmed) processSubmission(); });
         }
 
         function autoSubmit(reason) {
-            examActive = false; 
-            clearInterval(timerInterval);
-            clearInterval(cctvInterval); 
-            
+            examActive = false; clearInterval(timerInterval); clearInterval(cctvInterval); 
             const video = document.getElementById('cctv-video');
             if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); }
-
             document.getElementById('exam-screen').classList.remove('blur-screen');
 
             Swal.fire({ 
-                title: 'ANDA DIDISKUALIFIKASI!', 
-                text: reason, 
-                icon: 'error', 
-                allowOutsideClick: false, 
-                confirmButtonText: 'Mengerti & Kirim Sisa Jawaban',
-                confirmButtonColor: '#d33'
-            }).then(() => {
-                processSubmission();
-            });
+                title: 'DIDISKUALIFIKASI / WAKTU HABIS!', text: reason, icon: 'error', allowOutsideClick: false, 
+                confirmButtonText: 'Serahkan Sisa Jawaban', confirmButtonColor: '#ef4444',
+                background: '#1e293b', color: '#f8fafc'
+            }).then(() => { processSubmission(); });
         }
 
         function processSubmission() {
             examActive = false; clearInterval(timerInterval); clearInterval(cctvInterval); 
-            
             const video = document.getElementById('cctv-video');
             if (video.srcObject) { video.srcObject.getTracks().forEach(track => track.stop()); }
-
             document.getElementById('exam-screen').classList.remove('blur-screen');
             
             const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.disabled = true; btnSubmit.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Memproses...`;
+            btnSubmit.disabled = true; btnSubmit.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Menyandikan Data...`;
 
             const form = document.getElementById('exam-form'); const formData = new FormData(form);
             
-            // Format Pengambilan Jawaban Drag & Drop Tetap Sama
-            const getDropAnswers = (group) => {
-                let ans = [];
-                document.querySelectorAll(`[data-group="${group}"].dropzone`).forEach(z => {
-                    ans.push(z.children.length > 0 ? z.children[0].id.replace(`${group}_`, '') : '-');
-                });
-                return ans.join(',');
-            };
-            const getSortAnswers = (id) => Array.from(document.getElementById(id).children).map(li => li.dataset.id).join(',');
-
+            // Loop dinamis 40 Soal
             const dataToSubmit = {
-                type: "ujian", 
-                timestamp: new Date().toLocaleString('id-ID'),
-                nama: studentName, kelas: studentClass, pelanggaran: cheatCount,
-                q1: formData.get('q1') || '', q2: formData.get('q2') || '',
-                q3: formData.getAll('q3').join(',') || '', q4: formData.getAll('q4').join(',') || '',
-                q5: getDropAnswers('q5'), q6: getDropAnswers('q6'),
-                q7: getSortAnswers('sort-q7'), q8: getSortAnswers('sort-q8'),
-                q9: formData.get('q9') || '', q10: formData.get('q10') || '',
-                q11: formData.get('q11') || '', q12: formData.get('q12') || '',
-                q13: formData.get('q13') || '', q14: formData.get('q14') || '', q15: formData.get('q15') || ''
+                type: "ujian", timestamp: new Date().toLocaleString('id-ID'),
+                nama: studentName, kelas: studentClass, pelanggaran: cheatCount
             };
+            
+            for(let i = 1; i <= 40; i++){
+                dataToSubmit['q' + i] = formData.get('q' + i) || '';
+            }
 
-            Swal.fire({ title: 'Mengirim Jawaban...', html: 'Jangan tutup aplikasi ini.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ 
+                title: 'Menyandikan Data Ke Pusat...', html: 'Jangan tutup aplikasi ini.', 
+                allowOutsideClick: false, didOpen: () => Swal.showLoading(),
+                background: '#1e293b', color: '#f8fafc'
+            });
 
             fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST', 
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8', 
+                },
                 body: JSON.stringify(dataToSubmit)
-            }).then(() => {
-                localStorage.setItem('ujian_bengkel_selesai', 'true');
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Jawaban tersimpan di server.', allowOutsideClick: false, confirmButtonText: 'Tutup Aplikasi' }).then(() => {
-                    if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-                    document.body.innerHTML = `<div class="min-h-screen flex items-center justify-center bg-gray-100"><div class="text-center p-8"><i class="fas fa-check-circle text-6xl text-green-500 mb-4"></i><h1 class="text-3xl font-bold text-gray-800 mb-2">Terima Kasih</h1><p class="text-gray-600">Ujian telah selesai. Silakan tutup browser Anda.</p></div></div>`;
+            })
+            .then(response => {
+                 if (!response.ok) {
+                     throw new Error('Jaringan bermasalah');
+                 }
+                 return response.json(); 
+            })
+            .then(dataServer => {
+                localStorage.setItem('pts_sejarah_selesai', 'true');
+                
+                // Ambil skor dari server
+                let skorSiswa = dataServer.skor || 0;
+                let benarSiswa = dataServer.benar || 0;
+                
+                Swal.fire({ 
+                    icon: 'success', title: 'Evaluasi Selesai!', 
+                    html: `Dokumen evaluasi berhasil diserahkan.<br><br><b>Skor Anda: ${skorSiswa}</b><br>Benar: ${benarSiswa} dari 40 soal.<br><br>Silakan isi umpan balik.`, 
+                    allowOutsideClick: false, confirmButtonText: 'Lanjut', confirmButtonColor: '#10b981',
+                    background: '#1e293b', color: '#f8fafc'
+                }).then(() => {
+                    Swal.fire({
+                        title: 'Kirim Umpan Balik',
+                        background: '#1e293b', color: '#f8fafc',
+                        html: `
+                            <p class="text-sm text-slate-400 mb-3">Bagaimana pengalaman Anda menggunakan aplikasi evaluasi ini?</p>
+                            <select id="swal-rating" class="w-full p-3 border border-slate-600 bg-slate-700 text-white rounded-lg mb-3 focus:ring-emerald-500">
+                                <option value="5">⭐⭐⭐⭐⭐ (Sangat Bagus)</option>
+                                <option value="4">⭐⭐⭐⭐ (Bagus)</option>
+                                <option value="3">⭐⭐⭐ (Cukup)</option>
+                                <option value="2">⭐⭐ (Kurang)</option>
+                                <option value="1">⭐ (Sangat Kurang)</option>
+                            </select>
+                            <textarea id="swal-feedback" class="w-full p-3 border border-slate-600 bg-slate-700 text-white rounded-lg focus:ring-emerald-500 placeholder-slate-400" rows="3" placeholder="Ketik kritik, saran, atau kendala Anda di sini..."></textarea>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Kirim Masukan',
+                        cancelButtonText: 'Lewati',
+                        confirmButtonColor: '#10b981',
+                        allowOutsideClick: false,
+                        preConfirm: () => {
+                            return {
+                                rating: document.getElementById('swal-rating').value,
+                                pesan: document.getElementById('swal-feedback').value
+                            }
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            Swal.fire({ title: 'Mengirim Masukan...', allowOutsideClick: false, background: '#1e293b', color: '#f8fafc', didOpen: () => Swal.showLoading() });
+                            const feedbackData = {
+                                type: "feedback", nama: studentName, kelas: studentClass,
+                                rating: result.value.rating, pesan: result.value.pesan
+                            };
+                            
+                            fetch(GOOGLE_SCRIPT_URL, {
+                                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                body: JSON.stringify(feedbackData)
+                            }).then(() => { showFinalScreen(); }).catch(() => { showFinalScreen(); });
+                        } else {
+                            showFinalScreen();
+                        }
+                    });
                 });
             }).catch(err => {
-                btnSubmit.disabled = false; btnSubmit.innerHTML = `<i class="fas fa-paper-plane"></i> Selesai & Kirim Jawaban`;
-                Swal.fire({ icon: 'error', title: 'Koneksi Gagal', text: 'Pastikan internet Anda stabil.' });
+                console.error("Fetch error:", err);
+                btnSubmit.disabled = false; btnSubmit.innerHTML = `<i class="fas fa-paper-plane"></i> Serahkan Jawaban`;
+                Swal.fire({ 
+                    icon: 'error', title: 'Koneksi Gagal', 
+                    text: 'Gagal menerima skor. Pastikan jalur komunikasi stabil dan pengaturan server benar.',
+                    background: '#1e293b', color: '#f8fafc', confirmButtonColor: '#10b981'
+                });
             });
+        }
+        
+        function showFinalScreen() {
+            if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+            document.body.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-night-economy">
+                    <div class="text-center p-10 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-w-md w-full mx-4 relative overflow-hidden">
+                        <div class="absolute -top-10 -left-10 text-emerald-900/30"><i class="fas fa-chart-line text-9xl"></i></div>
+                        <div class="relative z-10">
+                            <i class="fas fa-check-circle text-6xl text-emerald-500 mb-4 shadow-emerald-500/50 drop-shadow-lg"></i>
+                            <h1 class="text-3xl font-bold text-white mb-2 tracking-wide">Selesai!</h1>
+                            <p class="text-slate-400 border-t border-slate-700 mt-4 pt-4">Evaluasi telah berhasil diserahkan. Silakan tutup browser Anda.</p>
+                        </div>
+                    </div>
+                </div>`;
         }
     </script>
 </body>
